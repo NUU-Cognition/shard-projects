@@ -1,0 +1,13 @@
+version: "1.0.0"
+name: Projects
+shorthand: proj
+description: High-level planning and task management
+
+install:
+  - source: (Dashboard) Backlog.md
+    dest: Mesh/(Dashboard) Backlog.md
+    once: true
+
+folders:
+  - Mesh/Types/Tasks/
+  - Mesh/Archive/Tasks/

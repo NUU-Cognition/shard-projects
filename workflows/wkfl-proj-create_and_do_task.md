@@ -26,6 +26,7 @@ Create a task specification and immediately execute it in a single workflow.
 
 - Read the task and implement the task until it is finished or until you have done everything you can without human input (what is left is human blocking todos)
 - Continue this loop until you think you have finished the task, at which point move to the next stage
+- Whenever you complete a requirement checkbox or definition-of-done checkbox, tick it off immediately (`- [ ]` → `- [x]`)
 - Whenever you complete any meaningful amount of work, make sure to record it in the task log
 
 ## Stage 3: Task Review

@@ -1,12 +1,19 @@
+shard-spec: "0.1.0"
 version: "1.0.0"
 name: Projects
 shorthand: proj
 description: High-level planning and task management
+dependencies:
+  - source: NUU-Cognition/shard-flint
+
+types:
+  - name: Task
+    source: type-proj-task.md
 
 install:
   - source: (Dashboard) Backlog.md
     dest: Mesh/(Dashboard) Backlog.md
-    once: true
+    mode: once
 
 folders:
   - Mesh/Types/Tasks/

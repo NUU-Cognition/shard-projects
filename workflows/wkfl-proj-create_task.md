@@ -29,7 +29,6 @@ Create a task specification.
 ## Stage 3: Update Project
 
 - Update the task to the relevant priority in the yaml
-- Use @sk-ld-sync across everything
 - Update export and state if needed
 
 # Output

@@ -1,39 +1,40 @@
-This workflow belongs to the Projects shard. Ensure you have the @init-proj.md in context before continuing.
+This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Workflow: Do Task
 
-Execute a task.
+Execute an existing task through to completion. This is an **execution** workflow — the task already has a specification, and this workflow works it to done.
 
 # Input
 
-- Task specification (Task)
-- Context around the task
-- (Optional) aiding prompts and instructions on how to complete the task
+- Task specification (an existing Task artifact)
+- (Optional) Context or aiding prompts on how to complete the task
 
 # Actions
 
 ## Stage 1: Task Work
 
-- Set the task status to in-progress
-- Read the task and implement the task until it is finished or until you have done everything you can without human input (what is left is human blocking todos)
-- Continue this loop until you think you have finished the task, at which point move to the next stage
-- Whenever you complete a requirement checkbox or definition-of-done checkbox, tick it off immediately (`- [ ]` → `- [x]`)
-- Whenever you complete any meaningful amount of work, make sure to record it in the task log
+- Set status to `in-progress`
+- Read the task fully and implement until finished, or until you've done everything possible without human input
+- Whenever you complete a requirement or definition-of-done checkbox, tick it immediately (`- [ ]` → `- [x]`)
+- Whenever you complete meaningful work, record it in the Task Log
+- If blocked on a human decision or external dependency, set status to `blocked`, log the reason, and present the blocker to the user. When resolved, return to `in-progress` and continue.
+- Once all work is complete, proceed to Stage 2
 
 ## Stage 2: Task Review
 
-- Mark the task status to `review`
-- Update the task file with progress
-- Provide an update to the user based on your completion
-- The user will converse with you to refine. If the user makes a new request or refinement, make sure to capture it in the task
-- Once you receive confirmation from the user, progress to the next stage. 
+- Set status to `review`
+- Update the task file with final progress
+- Provide the user with a completion summary
+- Converse to refine — if the user requests changes, capture them in the task and execute them
+- Once the user confirms, proceed to Stage 3
 
-## Stage 3: Update Project
+## Stage 3: Close
 
-- Update the task to done in the yaml
-- Set the completed date (ISO 8601)
-- Update export and state if needed
+- Set status to `done`
+- Set the `completed` date (ISO 8601)
+- Update the increment log with a completion entry
 
 # Output
 
-- Completed task
+- Completed task in `done` status
+- Increment log updated

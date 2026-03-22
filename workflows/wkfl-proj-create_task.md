@@ -1,8 +1,8 @@
-This workflow belongs to the Projects shard. Ensure you have the @init-proj.md in context before continuing.
+This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Workflow: Create Task
 
-Create a task specification. 
+Spec a new task for later execution. This is a **planning** workflow — it creates a task specification and refines it with the user, but does not execute the work.
 
 # Input
 
@@ -16,22 +16,24 @@ Create a task specification.
 - Set the `increment` field to link to the parent increment using `[[Hyperlink]]` syntax. All tasks must belong to an increment. To determine the increment:
   1. If user specifies an increment, use that
   2. If the task clearly relates to an active increment (check increment titles), use that
-  3. Otherwise, default to the latest `.A.0` adhoc increment (e.g., `3.A.0` if checkpoint is `3.0.0`)
-- The task status should be marked as draft
-- Other information like priority and due date is left blank unless specified
-- Once you have completed the above, progress to the next stage. 
+  3. Otherwise, default to the current adhoc increment (e.g., `6.A`)
+- Set status to `todo`
+- Leave priority and due date blank unless specified
+- Once created, present the task to the user and proceed to Stage 2
 
 ## Stage 2: Task Review
 
-- Converse with the user to refine the task specifications. At this point the user might use other shards to help with communication. 
-- Once you receive confirmation from the user, progress to the next stage. 
+- Converse with the user to refine the task specification — context, requirements, definition of done
+- The user may use other shards to help (notepads for brainstorming, etc.)
+- Once you receive confirmation from the user, proceed to Stage 3
 
-## Stage 3: Update Project
+## Stage 3: Finalise
 
-- Update the task to the relevant priority in the yaml
-- Update export and state if needed
+- Set priority and due date if discussed during review
+- Update the increment log with an entry for the new task
+- Confirm the spec is ready to work on
 
 # Output
 
-- New task specification
-- New task state propagated across Flint 
+- New task specification in `todo` status
+- Increment log updated

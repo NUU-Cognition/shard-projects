@@ -1,13 +1,14 @@
-This workflow belongs to the Projects shard. Ensure you have the @init-proj.md in context before continuing.
+This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Workflow: Create and Do Task
 
-Create a task specification and immediately execute it in a single workflow.
+Create a task and immediately execute it in a single workflow. This is an **execution** workflow — the task is created and worked to completion without a separate planning phase.
 
 # Input
 
 - Context of a task
-- (Optional) aiding prompts and instructions on how to complete the task
+- (Optional) Aiding prompts and instructions on how to complete the task
+- (Optional) `--skip-review` — skip Stage 3 and go straight from work to close
 
 # Actions
 
@@ -17,33 +18,36 @@ Create a task specification and immediately execute it in a single workflow.
 - Set the `increment` field to link to the parent increment using `[[Hyperlink]]` syntax. All tasks must belong to an increment. To determine the increment:
   1. If user specifies an increment, use that
   2. If the task clearly relates to an active increment (check increment titles), use that
-  3. Otherwise, default to the latest `.A.0` adhoc increment (e.g., `3.A.0` if checkpoint is `3.0.0`)
-- Set the task status to `in-progress` (since we're immediately executing)
-- Other information like priority and due date is left blank unless specified
-- Once you have completed the above, progress to the next stage.
+  3. Otherwise, default to the current adhoc increment (e.g., `6.A`)
+- Set status to `in-progress` (since we're immediately executing)
+- Leave priority and due date blank unless specified
+- Once created, proceed to Stage 2
 
 ## Stage 2: Task Work
 
-- Read the task and implement the task until it is finished or until you have done everything you can without human input (what is left is human blocking todos)
-- Continue this loop until you think you have finished the task, at which point move to the next stage
-- Whenever you complete a requirement checkbox or definition-of-done checkbox, tick it off immediately (`- [ ]` → `- [x]`)
-- Whenever you complete any meaningful amount of work, make sure to record it in the task log
+- Read the task and implement until finished, or until you've done everything possible without human input
+- Whenever you complete a requirement or definition-of-done checkbox, tick it immediately (`- [ ]` → `- [x]`)
+- Whenever you complete meaningful work, record it in the Task Log
+- If blocked on a human decision, set status to `blocked`, log the reason, and present the blocker to the user. When resolved, return to `in-progress` and continue.
+- Once all work is complete, proceed to Stage 3
 
 ## Stage 3: Task Review
 
-- Mark the task status to `review`
-- Update the task file with progress
-- Provide an update to the user based on your completion
-- The user will converse with you to refine. If the user makes a new request or refinement, make sure to capture it in the task
-- Once you receive confirmation from the user, progress to the next stage.
+*If `--skip-review` was passed, skip this stage and proceed directly to Stage 4.*
 
-## Stage 4: Update Project
+- Set status to `review`
+- Update the task file with final progress
+- Provide the user with a completion summary
+- Converse to refine — if the user requests changes, capture them in the task and execute them
+- Once the user confirms, proceed to Stage 4
 
-- Update the task to done in the yaml
-- Set the completed date (ISO 8601)
-- Update export and state if needed
+## Stage 4: Close
+
+- Set status to `done`
+- Set the `completed` date (ISO 8601)
+- Update the increment log with a completion entry
 
 # Output
 
-- Completed task
-- New task state propagated across Flint
+- Completed task in `done` status
+- Increment log updated

@@ -7,9 +7,9 @@
 id: [generate-uuid]
 tags:
   - "#proj/task"
-status: [draft|todo|in-progress|review|done|deprecated]
-/* If Increments shard is installed: */
+status: [todo|in-progress|review|reviewing|done|deprecated]
 increment: [[parent increment hyperlink to file]]
+/* All tasks must belong to an increment. See init-proj.md for how to determine the increment. */
 due: [ISO 8601]
 completed: [ISO 8601]
 priority: [empty|low|medium|high]

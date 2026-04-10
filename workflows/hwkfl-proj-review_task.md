@@ -2,7 +2,7 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 # Headless Workflow: Review Task
 
-Autonomous QA review of a completed task via OrbH. Verify all requirements are met, fix straightforward issues inline, and close the task — or defer to the human for decisions.
+Autonomous QA review of a completed task via Orbh. Verify all requirements are met, fix straightforward issues inline, and close the task — or defer to the human for decisions.
 
 # Input
 
@@ -14,10 +14,10 @@ Autonomous QA review of a completed task via OrbH. Verify all requirements are m
 
 - Read the task fully — frontmatter, context, requirements, definition of done, task log, notes
 - Set task status to `reviewing`
-- Set OrbH interface:
+- Set Orbh interface:
   ```bash
-  flint orb set <id> phase "verifying"
-  flint orb set <id> progress "0/<N> checkboxes verified"
+  flint orbh set <id> phase "verifying"
+  flint orbh set <id> progress "0/<N> checkboxes verified"
   ```
 
 ## 2. Verify
@@ -32,7 +32,7 @@ For each unticked item:
 
 Update progress as you go:
 ```bash
-flint orb set <id> progress "<verified>/<total> checkboxes verified"
+flint orbh set <id> progress "<verified>/<total> checkboxes verified"
 ```
 
 ## 3. Resolve
@@ -42,27 +42,28 @@ flint orb set <id> progress "<verified>/<total> checkboxes verified"
   - Fix the issue inline if it's straightforward — make the change, verify it, tick the checkbox, and log the fix in the Task Log under a "Review fixes" heading
   - If a fix requires a human decision or significant rework, use a deferred question:
     ```bash
-    flint orb request <id> "<describe the issue and what decision is needed>"
+    flint orbh request <id> "<describe the issue and what decision is needed>"
     ```
-- Update OrbH interface:
+- Update Orbh interface:
   ```bash
-  flint orb set <id> phase "resolving"
+  flint orbh set <id> phase "resolving"
   ```
 
 ## 4. Close
 
 - Ensure all requirement and definition-of-done checkboxes are ticked
-- Set task status to `done`
+- Set task status to `reviewed`
 - Set the `completed` date (ISO 8601)
 - Add a final Task Log entry recording the review outcome
+- The `reviewed → done` transition is a manual human action — do not set the task to `done`
 - Return your result:
   ```bash
-  flint orb set <id> phase "complete"
-  flint orb return <id> "Reviewed and closed task (Task) NNN. <summary: N items verified, M fixed inline>."
+  flint orbh set <id> phase "complete"
+  flint orbh return <id> "Reviewed task (Task) NNN. <summary: N items verified, M fixed inline>. Status set to reviewed."
   ```
 
 # Output
 
 - Task verified as complete with all checkboxes confirmed
-- Task status set to `done` with completion date
-- OrbH result returned with review summary
+- Task status set to `reviewed` with completion date
+- Orbh result returned with review summary

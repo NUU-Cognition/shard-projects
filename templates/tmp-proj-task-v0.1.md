@@ -7,7 +7,7 @@
 id: [generate-uuid]
 tags:
   - "#proj/task"
-status: [todo|in-progress|review|reviewing|done|deprecated]
+status: [todo|in-progress|blocked|deferred|review|reviewing|reviewed|done|deprecated|superseded]
 increment: [[parent increment hyperlink to file]]
 /* All tasks must belong to an increment. See init-proj.md for how to determine the increment. */
 due: [ISO 8601]
@@ -17,6 +17,14 @@ priority: [empty|low|medium|high]
 template: "[[tmp-proj-task-v0.1]]"
 authors: /* from .flint/identity.json; omit if no identity set */
   - "[[@Person Name]]"
+artifacts-created: /* optional — list Mesh artifacts (reports, notepads, specs, etc.) created as a result of this task. Only Mesh artifacts, not code or external outputs. Populate as artifacts are created during execution. */
+  - "[[artifact wikilink]]"
+  - (continued)
+git-repos: /* optional — list of repos this task edits. Wikilinks to codebase references (e.g. "[[rf-cb-flint]]") or plain names if no reference exists. When set, agents must commit work as WIP commits. See knw-proj-wip_commits.md. */
+  - "[[rf-cb-example]]"
+  - (continued)
+wip-commits: /* populated by agents — append SHA after each WIP commit. If multiple repos, annotate: "a1b2c3d (rf-cb-flint)". */
+checkpointed: /* do not set — written by the OrbRepo checkpoint agent with checkpoint commit SHA(s). */
 ---
 
 # Context

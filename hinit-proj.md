@@ -1,10 +1,10 @@
 # Projects Shard — Headless
 
-You are running headless via OrbH. This file replaces `init-proj.md` for headless sessions. The task lifecycle, increment rules, and checkbox tracking are unchanged — read `init-proj.md` for those fundamentals. Tasks are created using the [[tmp-proj-task-v0.1]] template. This file teaches you what's different when there's no human at the terminal.
+You are running headless via Orbh. This file replaces `init-proj.md` for headless sessions. The task lifecycle, increment rules, and checkbox tracking are unchanged — read `init-proj.md` for those fundamentals. Tasks are created using the [[tmp-proj-task-v0.1]] template. This file teaches you what's different when there's no human at the terminal.
 
 ## Headless Workflows
 
-Use these instead of the interactive `wkfl-*` counterparts. They remove stage gates and add OrbH interface reporting.
+Use these instead of the interactive `wkfl-*` counterparts. They remove stage gates and add Orbh interface reporting.
 
 | Workflow | File | Replaces | When to use |
 |----------|------|----------|-------------|
@@ -15,9 +15,9 @@ Use these instead of the interactive `wkfl-*` counterparts. They remove stage ga
 
 Skills (`sk-proj-*`) work unchanged in headless mode — they're atomic and have no interactive checkpoints.
 
-## OrbH Interface Schema
+## Orbh Interface Schema
 
-In headless mode, you communicate progress via `flint orb set <id> <key> <value>`. The Plate UI and `flint orb watch` read these keys. **Set them consistently** so the human can track your work without reading the transcript.
+In headless mode, you communicate progress via `flint orbh set <id> <key> <value>`. The Plate UI and `flint orbh watch` read these keys. **Set them consistently** so the human can track your work without reading the transcript.
 
 ### Required Keys
 
@@ -39,6 +39,7 @@ Phases are shard-specific — these are the Projects shard phases. Set the `phas
 | `creating-task` | Writing the task spec (create-and-do only) |
 | `implementing` | Actively working on requirements |
 | `blocked` | Waiting for human input via deferred question |
+| `deferred` | Task intentionally shelved — session exits cleanly |
 | `complete` | All work done, returning result |
 
 **Review Task:**
@@ -48,7 +49,7 @@ Phases are shard-specific — these are the Projects shard phases. Set the `phas
 | `verifying` | Checking each checkbox against reality |
 | `resolving` | Fixing issues found during verification |
 | `blocked` | Needs human decision on a verification issue |
-| `complete` | Review done, task closed |
+| `complete` | Review done, task set to `reviewed` (human moves to `done`) |
 
 **Create Task (stub fill):**
 
@@ -87,6 +88,10 @@ phase:    "complete"
 progress: "4/4 requirements"
 ```
 
+## Repo Work and WIP Commits
+
+If the task has a `git-repos` field, you must commit your changes in each listed repo as a WIP commit before completing. The format is `[OR] wip: <Flint Name>/(Task) NNN Name`. After each commit, record the SHA in the task's `wip-commits` field (annotated with repo name in parens if multiple repos). Stage only the files you edited — never `git add -A`. See [[knw-proj-wip_commits]] for full details. The execution workflows include this step explicitly.
+
 ## Interaction Model
 
 **No terminal.** You have no human at the other end typing responses. The differences:
@@ -96,23 +101,23 @@ progress: "4/4 requirements"
 | "Present findings to the user" | Set interface keys so the Plate can display them |
 | "Converse to refine" | Proceed autonomously; defer if genuinely stuck |
 | "Once the user confirms" | Skip — there's no confirmation step |
-| Status `blocked` + wait | `flint orb request` (deferred) — exit and resume later |
-| Print completion summary | `flint orb return` — structured result stored on the session |
+| Status `blocked` + wait | `flint orbh request` (deferred) — exit and resume later |
+| Print completion summary | `flint orbh return` — structured result stored on the session |
 
 ## Artifact Tracking
 
 When you create or modify a Mesh artifact, register it so the Plate can display it:
 
 ```bash
-flint orb artifact <id> "(Task) 341 Pre-Pass Title and Description on Session Launch"
+flint orbh artifact <id> "(Task) 341 Pre-Pass Title and Description on Session Launch"
 ```
 
 ## Result Delivery
 
-Every headless workflow **must** end with `flint orb return`. The result is the primary output of your session — the human and the Plate read it. Keep it concise:
+Every headless workflow **must** end with `flint orbh return`. The result is the primary output of your session — the human and the Plate read it. Keep it concise:
 
 ```bash
-flint orb return <id> "Completed task (Task) 341. Implemented all 4 requirements: <brief list>. Moved to review."
+flint orbh return <id> "Completed task (Task) 341. Implemented all 4 requirements: <brief list>. Moved to review."
 ```
 
 If you exit without calling return, the session is marked `suspended` and the human has no structured output to read.

@@ -22,7 +22,7 @@ A unit of work with a defined scope and completion criteria. Tasks are the funda
 ## Lifecycle
 
 ```
-todo → in-progress → review → reviewing → done
+todo → in-progress → review → reviewing → reviewed → done
             ↓                      ↓
          blocked ←←←←←←←←←←←←←←←←┘
 

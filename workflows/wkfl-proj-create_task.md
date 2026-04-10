@@ -18,6 +18,7 @@ Spec a new task for later execution. This is a **planning** workflow — it crea
   2. If the task clearly relates to an active increment (check increment titles), use that
   3. Otherwise, default to the current adhoc increment (e.g., `6.A`)
 - Set status to `todo`
+- **Rename the file** to match the chosen title. If the file was created as a stub with a placeholder name (e.g. `(Task) 589 New Task.md`), rename it to `(Task) 589 <Chosen Title>.md` so the filename reflects the actual task content.
 - Leave priority and due date blank unless specified
 - Once created, present the task to the user and proceed to Stage 2
 

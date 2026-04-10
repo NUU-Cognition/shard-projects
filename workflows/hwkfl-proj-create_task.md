@@ -2,7 +2,7 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 # Headless Workflow: Create Task
 
-Autonomously spec a task via OrbH. Used when the Tasks Board Plate creates a stub artifact and launches an agent to fill it in. The task file already exists — rewrite it into a complete spec.
+Autonomously spec a task via Orbh. Used when the Tasks Board Plate creates a stub artifact and launches an agent to fill it in. The task file already exists — rewrite it into a complete spec.
 
 # Input
 
@@ -16,9 +16,9 @@ Autonomously spec a task via OrbH. Used when the Tasks Board Plate creates a stu
 - Read the task artifact fully
 - Read @tmp-proj-task template for structure reference
 - Extract the raw prompt from the `**Raw Prompt**` section — this is your source material
-- Set OrbH interface:
+- Set Orbh interface:
   ```bash
-  flint orb set <id> phase "reading-stub"
+  flint orbh set <id> phase "reading-stub"
   ```
 
 ## 2. Spec
@@ -31,10 +31,10 @@ Autonomously spec a task via OrbH. Used when the Tasks Board Plate creates a stu
   - Add Notes if relevant
 - Preserve the existing artifact ID, task number, and any frontmatter fields already set (increment, priority)
 - Keep the task in `todo` status
-- Update OrbH interface:
+- Update Orbh interface:
   ```bash
-  flint orb set <id> phase "writing-spec"
-  flint orb artifact <id> "<final task name>"
+  flint orbh set <id> phase "writing-spec"
+  flint orbh artifact <id> "<final task name>"
   ```
 
 ### If Scope Is Unclear
@@ -44,7 +44,7 @@ If the raw prompt is ambiguous and you cannot determine a reasonable scope:
 2. Note the ambiguity in the Task Log
 3. Use a deferred question:
    ```bash
-   flint orb request <id> "<what you need clarified to finalize the spec>"
+   flint orbh request <id> "<what you need clarified to finalize the spec>"
    ```
 
 ## 3. Complete
@@ -53,11 +53,11 @@ If the raw prompt is ambiguous and you cannot determine a reasonable scope:
 - Add a Task Log entry recording the spec creation
 - Return your result:
   ```bash
-  flint orb set <id> phase "complete"
-  flint orb return <id> "Specced task (Task) NNN <title>. Ready for review or execution."
+  flint orbh set <id> phase "complete"
+  flint orbh return <id> "Specced task (Task) NNN <title>. Ready for review or execution."
   ```
 
 # Output
 
 - Complete task spec in `todo` status, ready to be worked
-- OrbH result returned with task summary
+- Orbh result returned with task summary

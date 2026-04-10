@@ -2,7 +2,7 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 # Headless Workflow: Create and Do Task
 
-Autonomously create a task and execute it to completion in a single OrbH session. Combines spec creation and execution without interactive review stages.
+Autonomously create a task and execute it to completion in a single Orbh session. Combines spec creation and execution without interactive review stages.
 
 # Input
 
@@ -19,10 +19,11 @@ Autonomously create a task and execute it to completion in a single OrbH session
   2. If the task clearly relates to an active increment (check increment titles), use that
   3. Otherwise, default to the current adhoc increment (e.g., `6.A`)
 - Set status to `in-progress` (since we're immediately executing)
-- Set OrbH interface:
+- **Rename the file** to match the chosen title. If the file was created as a stub with a placeholder name (e.g. `(Task) 589 New Task.md`), rename it to `(Task) 589 <Chosen Title>.md` so the filename reflects the actual task content.
+- Set Orbh interface:
   ```bash
-  flint orb set <id> phase "creating-task"
-  flint orb artifact <id> "<task name>"
+  flint orbh set <id> phase "creating-task"
+  flint orbh artifact <id> "<task name>"
   ```
 
 ## 2. Execute
@@ -30,14 +31,14 @@ Autonomously create a task and execute it to completion in a single OrbH session
 - Read the task fully and implement until finished
 - Whenever you complete a requirement or definition-of-done checkbox, tick it immediately (`- [ ]` to `- [x]`)
 - Whenever you complete meaningful work, record it in the Task Log
-- Update the OrbH interface as you progress:
+- Update the Orbh interface as you progress:
   ```bash
-  flint orb set <id> phase "implementing"
-  flint orb set <id> progress "<done>/<total> requirements"
+  flint orbh set <id> phase "implementing"
+  flint orbh set <id> progress "<done>/<total> requirements"
   ```
 - Track created or modified artifacts:
   ```bash
-  flint orb artifact <id> "<artifact name>"
+  flint orbh artifact <id> "<artifact name>"
   ```
 
 ### If Blocked
@@ -47,10 +48,23 @@ If you need a human decision or are blocked on an external dependency:
 2. Set task status to `blocked`
 3. Use a deferred question:
    ```bash
-   flint orb request <id> "<clear question describing what you need>"
+   flint orbh request <id> "<clear question describing what you need>"
    ```
 
 When resumed after a response, read the answer and continue execution.
+
+### Committing Repo Work
+
+If the task has a `git-repos` field, you must commit your changes as WIP commits before completing. See [[knw-proj-wip_commits]] for the full convention. In short, for each repo in `git-repos`:
+
+1. Resolve the repo path (wikilink via `flint resolve codebase`, or use the plain name/path)
+2. `cd` to the repo
+3. `git add` only the files you edited (never `git add -A`)
+4. `git commit -m "[OR] wip: <Flint Name>/(Task) NNN Name"` (flint name without the (Flint) prefix)
+5. Record the commit SHA in the task's `wip-commits` field (annotate with repo name in parens if multiple repos)
+6. `cd` back to the Flint root
+
+If there is no `git-repos` field, skip this step.
 
 ## 3. Complete
 
@@ -59,12 +73,12 @@ When resumed after a response, read the answer and continue execution.
 - Add a final Task Log entry summarising the work done
 - Return your result:
   ```bash
-  flint orb set <id> phase "complete"
-  flint orb return <id> "Created and completed task (Task) NNN <title>. <brief summary>. Moved to review."
+  flint orbh set <id> phase "complete"
+  flint orbh return <id> "Created and completed task (Task) NNN <title>. <brief summary>. Moved to review."
   ```
 
 # Output
 
 - Task created and moved to `review` status with all checkboxes ticked
 - Task Log updated with creation and execution progress
-- OrbH result returned with completion summary
+- Orbh result returned with completion summary

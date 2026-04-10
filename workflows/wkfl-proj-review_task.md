@@ -42,11 +42,12 @@ Once the user confirms resolution is complete, proceed to Stage 3.
 ## Stage 3: Close
 
 - Ensure all requirement and definition-of-done checkboxes are ticked
-- Set status to `done`
+- Set status to `reviewed`
 - Set the `completed` date (ISO 8601)
 - Add a final Task Log entry recording the review outcome
+- The `reviewed → done` transition is a manual human action — do not set the task to `done`
 
 # Output
 
 - Task verified as complete with all checkboxes confirmed
-- Task status set to `done` with completion date
+- Task status set to `reviewed` with completion date

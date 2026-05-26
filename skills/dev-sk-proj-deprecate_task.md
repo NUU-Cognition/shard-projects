@@ -1,3 +1,5 @@
+> [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
+
 # Skill: Deprecate Task
 
 Mark a task as deprecated when it is no longer needed. Deprecation is a dead end — the work is abandoned with no successor.

@@ -1,3 +1,5 @@
+> [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
+
 This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Headless Workflow: Review Task
@@ -16,8 +18,8 @@ Autonomous QA review of a completed task via Orbh. Verify all requirements are m
 - Set task status to `reviewing`
 - Set Orbh interface:
   ```bash
-  flint orbh set <id> phase "verifying"
-  flint orbh set <id> progress "0/<N> checkboxes verified"
+  flint orbh session <id> set phase "verifying"
+  flint orbh session <id> set progress "0/<N> checkboxes verified"
   ```
 
 ## 2. Verify
@@ -32,7 +34,7 @@ For each unticked item:
 
 Update progress as you go:
 ```bash
-flint orbh set <id> progress "<verified>/<total> checkboxes verified"
+flint orbh session <id> set progress "<verified>/<total> checkboxes verified"
 ```
 
 ## 3. Resolve
@@ -46,7 +48,7 @@ flint orbh set <id> progress "<verified>/<total> checkboxes verified"
     ```
 - Update Orbh interface:
   ```bash
-  flint orbh set <id> phase "resolving"
+  flint orbh session <id> set phase "resolving"
   ```
 
 ## 4. Close
@@ -58,8 +60,8 @@ flint orbh set <id> progress "<verified>/<total> checkboxes verified"
 - The `reviewed → done` transition is a manual human action — do not set the task to `done`
 - Return your result:
   ```bash
-  flint orbh set <id> phase "complete"
-  flint orbh return <id> "Reviewed task (Task) NNN. <summary: N items verified, M fixed inline>. Status set to reviewed."
+  flint orbh session <id> set phase "complete"
+  flint orbh session <id> return "Reviewed task (Task) NNN. <summary: N items verified, M fixed inline>. Status set to reviewed."
   ```
 
 # Output

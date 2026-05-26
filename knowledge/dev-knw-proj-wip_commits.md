@@ -22,7 +22,7 @@ A few principles govern how agents interact with git in this system:
 - **Explicit staging only.** Never `git add -A` or `git add .`. Stage the specific files you touched. If the working directory has other people's uncommitted changes, those are not yours to commit.
 - **No history rewriting.** Agents never rebase, amend, or force-push. The WIP commits are append-only. Only the checkpoint agent squashes, and only on safe branches.
 - **The task is the record.** The task frontmatter tracks which repos were edited and which commit hashes were produced. This is the authoritative link between planning and execution.
-- **Use `[OR]` prefix.** All OrbRepo-managed commits carry the `[OR]` prefix. WIP commits use `[OR] wip: Flint/(Task) NNN Name`.
+- **Use `[OR]` prefix.** All OrbRepo-managed commits carry the `[OR]` prefix. WIP commits use `[OR] wip: Flint/(Task) NNN Name` as the subject line, with a short description paragraph in the commit body.
 
 ## When This Applies
 
@@ -34,9 +34,13 @@ If a task has no `git-repos` field, there is nothing to commit — skip all of t
 
 ```
 [OR] wip: <Flint Name>/<Artifact Reference>
+
+<short paragraph describing what changed and why>
 ```
 
 Where:
+- **Subject line:** `[OR] wip:` prefix, Flint name, artifact reference. Nothing else on this line.
+- **Body:** A short paragraph (1-3 sentences) describing what was actually changed in this commit. Separated from the subject by a blank line.
 - `[OR]` is the OrbRepo commit tag — all OrbRepo-managed commits carry this prefix
 - `wip:` is the commit type (lowercase, followed by a space)
 - `<Flint Name>` is the name of the Flint workspace the task belongs to (e.g. `NUU Flint`)
@@ -48,8 +52,16 @@ The Flint name comes from the workspace you're operating in. The artifact refere
 
 ```
 [OR] wip: NUU Flint/(Task) 205 Implement auth
+
+Added JWT validation middleware using jose library. Updated all API routes
+to use the new middleware. Old middleware left in place for rollback.
+```
+
+```
 [OR] wip: NUU OrbCraft/(Task) 031 Update renderer
-[OR] wip: NUU Flint/(Task) 206 Fix middleware validation
+
+Fixed SVG path calculation for convex hull orbits. Padding now accounts
+for card border radius.
 ```
 
 ## Commit Sequence
@@ -60,7 +72,15 @@ At the end of your work (before moving to review), for each repo listed in `git-
 2. `cd` to the repo
 3. **Check the branch.** If on `dev` or `main`, branch to the machine branch first: `orbrepo open` or `git checkout -b <machine-name>` (get machine name from `~/.nuucognition/orbrepo/config.toml`)
 4. Stage **only** the files you edited: `git add src/foo.ts src/bar.ts`
-5. Commit with the WIP format: `git commit -m "[OR] wip: <Flint Name>/(Task) NNN Name"`
+5. Commit with a multi-line message using a heredoc:
+   ```bash
+   git commit -m "$(cat <<'EOF'
+   [OR] wip: <Flint Name>/(Task) NNN Name
+
+   Short paragraph describing what changed.
+   EOF
+   )"
+   ```
 6. Record the commit hash (from `git rev-parse HEAD`) in the task's `wip-commits` field
 7. `cd` back to the Flint root
 
@@ -69,7 +89,13 @@ cd /path/to/repo
 # Check branch — must be on machine branch, not dev
 git branch --show-current  # if "dev", run: orbrepo open
 git add src/auth.ts src/middleware.ts
-git commit -m "[OR] wip: NUU Flint/(Task) 205 Implement auth"
+git commit -m "$(cat <<'EOF'
+[OR] wip: NUU Flint/(Task) 205 Implement auth
+
+Added JWT validation middleware using jose. Updated API routes to use
+the new middleware.
+EOF
+)"
 # note the SHA from the output, or: git rev-parse --short HEAD
 cd /path/to/flint
 ```

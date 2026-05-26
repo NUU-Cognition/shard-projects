@@ -1,3 +1,5 @@
+> [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
+
 This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Headless Workflow: Do Task
@@ -18,8 +20,8 @@ Execute an existing task autonomously to completion via Orbh. No interactive sta
 - Set task status to `in-progress`
 - Set Orbh interface:
   ```bash
-  flint orbh set <id> phase "reading-task"
-  flint orbh set <id> progress "0/<N> requirements"
+  flint orbh session <id> set phase "reading-task"
+  flint orbh session <id> set progress "0/<N> requirements"
   ```
 - If this is a refinement pass (task has prior session entries in the task log), review what was already done and pick up from there
 
@@ -29,8 +31,8 @@ Execute an existing task autonomously to completion via Orbh. No interactive sta
 - Whenever you complete a requirement or definition-of-done checkbox, tick it immediately (`- [ ]` to `- [x]`)
 - Update the Orbh interface as you progress:
   ```bash
-  flint orbh set <id> phase "implementing"
-  flint orbh set <id> progress "<done>/<total> requirements"
+  flint orbh session <id> set phase "implementing"
+  flint orbh session <id> set progress "<done>/<total> requirements"
   ```
 - Whenever you complete meaningful work, record it in the Task Log
 - Track created or modified artifacts:
@@ -52,12 +54,12 @@ When resumed after a response, read the answer and continue execution.
 
 ### Committing Repo Work
 
-If the task has a `git-repos` field, you must commit your changes as WIP commits before completing. See [[knw-proj-wip_commits]] for the full convention. In short, for each repo in `git-repos`:
+If the task has a `git-repos` field, you must commit your changes as WIP commits before completing. See [[dev-knw-proj-wip_commits]] for the full convention. In short, for each repo in `git-repos`:
 
 1. Resolve the repo path (wikilink via `flint resolve codebase`, or use the plain name/path)
 2. `cd` to the repo
 3. `git add` only the files you edited (never `git add -A`)
-4. `git commit -m "[OR] wip: <Flint Name>/(Task) NNN Name"` (flint name without the (Flint) prefix)
+4. `git commit` with subject `[OR] wip: <Flint Name>/(Task) NNN Name` and a short paragraph in the body describing what changed (use a heredoc for multi-line). Flint name without the (Flint) prefix.
 5. Record the commit SHA in the task's `wip-commits` field (annotate with repo name in parens if multiple repos)
 6. `cd` back to the Flint root
 
@@ -70,8 +72,8 @@ If there is no `git-repos` field, skip this step.
 - Add a final Task Log entry summarising the work done
 - Return your result:
   ```bash
-  flint orbh set <id> phase "complete"
-  flint orbh return <id> "Completed task (Task) NNN. <brief summary of what was done>. Moved to review."
+  flint orbh session <id> set phase "complete"
+  flint orbh session <id> return "Completed task (Task) NNN. <brief summary of what was done>. Moved to review."
   ```
 
 # Output

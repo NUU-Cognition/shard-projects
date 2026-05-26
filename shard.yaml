@@ -7,11 +7,10 @@ dependencies:
   - source: NUU-Cognition/shard-flint
 
 types:
-  - name: Task
-    source: type-proj-task.md
+  - Task
 
 install:
-  - source: (Dashboard) Backlog.md
+  - source: inst-proj-dashboard.md
     dest: Mesh/(Dashboard) Backlog.md
     mode: once
 

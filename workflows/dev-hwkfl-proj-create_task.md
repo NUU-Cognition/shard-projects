@@ -1,3 +1,5 @@
+> [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
+
 This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Headless Workflow: Create Task
@@ -18,7 +20,7 @@ Autonomously spec a task via Orbh. Used when the Tasks Board Plate creates a stu
 - Extract the raw prompt from the `**Raw Prompt**` section — this is your source material
 - Set Orbh interface:
   ```bash
-  flint orbh set <id> phase "reading-stub"
+  flint orbh session <id> set phase "reading-stub"
   ```
 
 ## 2. Spec
@@ -29,11 +31,11 @@ Autonomously spec a task via Orbh. Used when the Tasks Board Plate creates a stu
   - Write actionable Requirements as checkboxes
   - Write a Definition of Done as checkboxes
   - Add Notes if relevant
-- Preserve the existing artifact ID, task number, and any frontmatter fields already set (increment, priority)
+- Preserve the existing artifact ID, task number, and any frontmatter fields already set (from, priority)
 - Keep the task in `todo` status
 - Update Orbh interface:
   ```bash
-  flint orbh set <id> phase "writing-spec"
+  flint orbh session <id> set phase "writing-spec"
   flint orbh artifact <id> "<final task name>"
   ```
 
@@ -53,8 +55,8 @@ If the raw prompt is ambiguous and you cannot determine a reasonable scope:
 - Add a Task Log entry recording the spec creation
 - Return your result:
   ```bash
-  flint orbh set <id> phase "complete"
-  flint orbh return <id> "Specced task (Task) NNN <title>. Ready for review or execution."
+  flint orbh session <id> set phase "complete"
+  flint orbh session <id> return "Specced task (Task) NNN <title>. Ready for review or execution."
   ```
 
 # Output

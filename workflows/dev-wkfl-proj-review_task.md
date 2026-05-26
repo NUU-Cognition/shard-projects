@@ -1,3 +1,5 @@
+> [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
+
 This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Workflow: Review Task

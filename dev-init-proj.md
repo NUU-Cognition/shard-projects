@@ -6,10 +6,10 @@ Task management for Flint workspaces. Tasks are the fundamental unit of work.
 
 The Projects shard serves two distinct purposes:
 
-| Concern | What it does | Status |
-|---------|-------------|--------|
-| **Execution** | Create tasks, work tasks, review completed work, capture retroactive work | Built — workflows, skills, and dashboard are operational |
-| **Planning** | Prioritize, schedule, track project-level status, roadmap | Future — fields exist in the template but no planning-specific dashboard or workflows yet |
+| Concern       | What it does                                                              | Status                                                                                    |
+| ------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Execution** | Create tasks, work tasks, review completed work, capture retroactive work | Built — workflows, skills, and dashboard are operational                                  |
+| **Planning**  | Prioritize, schedule, track project-level status, roadmap                 | Future — fields exist in the template but no planning-specific dashboard or workflows yet |
 
 The **Backlog dashboard** is an execution view — it shows all tasks grouped by status, sorted by number. It does not organize by priority or due date. When the planning layer is built, it will get its own dashboard and workflows.
 
@@ -30,18 +30,21 @@ The **Backlog dashboard** is an execution view — it shows all tasks grouped by
 | Create Task | Workflow | Spec a task for later — sets it as `todo`, refines with human review |
 | Deprecate Task | Skill | Triage a task out of the backlog |
 
-## Tasks and Increments
+## Tasks and the From Field
 
-Every task must belong to an increment. The `increment` frontmatter field links the task to its parent increment using wikilink syntax:
+Tasks optionally link to a parent context via the `from` frontmatter field. The parent can be an increment, a mission, or left blank. Most tasks created in quick conversation don't need a parent — don't force one.
 
 ```yaml
-increment: "[[(Increment) 6.10 - Shard Improvements]]"
+from: "[[(Increment) 6.10 - Shard Improvements]]"
+from: "[[(Mission) 001 - Auth Rewrite]]"
+from:
 ```
 
-When creating a task, determine the increment:
-1. If the user specifies one, use that
-2. If the task clearly relates to an active increment, use that
-3. Otherwise, default to the current adhoc increment (e.g., `6.A`)
+When creating a task, determine the `from` value:
+1. If the user specifies a parent (increment or mission), use that
+2. If the task is being created as part of a mission, link to the mission
+3. If the task clearly relates to an active increment, use that
+4. Otherwise, leave `from` blank
 
 ## Task Lifecycle
 
@@ -85,7 +88,7 @@ Supersession is a **relationship**, not a status. The `superseded-by` field can 
 | Task outdated or approach was wrong | `deprecated` | Yes | Stale work; successor takes a different path |
 | Task abandoned with no successor | `deprecated` | No | Dead end — no continuation |
 
-The `supersede_task` skill accepts a target status (`done`, `superseded`, or `deprecated`) when creating the supersession link. See [[sk-proj-supersede_task]] for details.
+The `supersede_task` skill accepts a target status (`done`, `superseded`, or `deprecated`) when creating the supersession link. See [[dev-sk-proj-supersede_task]] for details.
 
 ### Dynamic Relationship Fields
 
@@ -141,11 +144,13 @@ Before moving a task to review, agents must commit their changes in each repo as
 
 ```
 [OR] wip: <Flint Name>/(Task) NNN Name
+
+<short paragraph describing what changed>
 ```
 
 After each commit, record the SHA in the task's `wip-commits` field. If the task edits multiple repos, annotate each SHA with the repo name in parentheses (e.g. `"a1b2c3d (rf-cb-flint)"`).
 
-Stage only the files you edited (never `git add -A`). See [[knw-proj-wip_commits]] for the full convention, philosophy, staging rules, and commit sequence.
+Stage only the files you edited (never `git add -A`). See [[dev-knw-proj-wip_commits]] for the full convention, philosophy, staging rules, and commit sequence.
 
 The `checkpointed` and `pr` fields on tasks are written by OrbRepo agents (checkpoint and close) — never set them yourself.
 
@@ -163,16 +168,16 @@ When working on tasks, agents must tick off checkbox items (`- [ ]` → `- [x]`)
 
 | Skill | File | Purpose |
 |-------|------|---------|
-| Capture As Task | `sk-proj-capture_as_task.md` | Capture recent work as a completed task |
-| Deprecate Task | `sk-proj-deprecate_task.md` | Mark a task as deprecated — dead end with no successor |
-| Supersede Task | `sk-proj-supersede_task.md` | Mark a task as superseded — redirect to a successor task |
-| Archive Tasks | `sk-proj-archive_tasks.md` | Archive completed tasks to `Mesh/Archive/Tasks/` *(stub)* |
+| Capture As Task | `dev-sk-proj-capture_as_task.md` | Capture recent work as a completed task |
+| Deprecate Task | `dev-sk-proj-deprecate_task.md` | Mark a task as deprecated — dead end with no successor |
+| Supersede Task | `dev-sk-proj-supersede_task.md` | Mark a task as superseded — redirect to a successor task |
+| Archive Tasks | `dev-sk-proj-archive_tasks.md` | Archive completed tasks to `Mesh/Archive/Tasks/` *(stub)* |
 
 # Workflows
 
 | Workflow | File | Purpose |
 |----------|------|---------|
-| Create Task | `wkfl-proj-create_task.md` | Spec a new task with human review (planning) |
-| Do Task | `wkfl-proj-do_task.md` | Execute a task through to completion |
-| Create and Do Task | `wkfl-proj-create_and_do_task.md` | Create and immediately execute a task |
-| Review Task | `wkfl-proj-review_task.md` | QA review — verify completed work against requirements |
+| Create Task | `dev-wkfl-proj-create_task.md` | Spec a new task with human review (planning) |
+| Do Task | `dev-wkfl-proj-do_task.md` | Execute a task through to completion |
+| Create and Do Task | `dev-wkfl-proj-create_and_do_task.md` | Create and immediately execute a task |
+| Review Task | `dev-wkfl-proj-review_task.md` | QA review — verify completed work against requirements |

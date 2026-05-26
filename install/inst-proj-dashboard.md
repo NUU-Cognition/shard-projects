@@ -47,11 +47,11 @@ for (const status of activeStatuses) {
   if (group.length === 0) {
     dv.paragraph("*None*");
   } else {
-    dv.table(["#", "Task", "Increment"],
+    dv.table(["#", "Task", "From"],
       group.map(p => [
         taskNumber(p),
         dv.fileLink(p.file.path, false, formatName(p)),
-        p.increment ?? "—"
+        p.from ?? "—"
       ])
     );
   }

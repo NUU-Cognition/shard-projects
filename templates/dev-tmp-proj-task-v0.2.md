@@ -8,13 +8,18 @@ id: [generate-uuid]
 tags:
   - "#proj/task"
 status: [todo|in-progress|blocked|deferred|review|reviewing|reviewed|done|deprecated|superseded]
-increment: [[parent increment hyperlink to file]]
-/* All tasks must belong to an increment. See init-proj.md for how to determine the increment. */
+from: [[optional parent — increment or mission wikilink, or leave blank]]
+/* The from field is optional. It links to the parent context this task came from:
+   - An increment: "[[(Increment) 6.10 - Shard Improvements]]"
+   - A mission: "[[(Mission) 001 - Auth Rewrite]]"
+   - Or left blank if the task has no parent context.
+   Do not force a parent — most quick tasks don't need one. */
 due: [ISO 8601]
 completed: [ISO 8601]
 priority: [empty|low|medium|high]
-[agent]-sessions: /* replace [agent] with your agent type (claude, codex, etc.) */
-template: "[[tmp-proj-task-v0.1]]"
+orbh-sessions:
+  - "[[agent-session-uuid]]"
+template: "[[dev-tmp-proj-task-v0.2]]"
 authors: /* from .flint/identity.json; omit if no identity set */
   - "[[@Person Name]]"
 artifacts-created: /* optional — list Mesh artifacts (reports, notepads, specs, etc.) created as a result of this task. Only Mesh artifacts, not code or external outputs. Populate as artifacts are created during execution. */
@@ -70,11 +75,11 @@ checkpointed: /* do not set — written by the OrbRepo checkpoint agent with che
 */
 
 - YYYY-MM-DD: [agent or human reports implementation progress]
-- (continued)
+- (continued below)
 
 # Notes
 
 - [any additional context, caveats, or open questions]
-- (continued)
+- (continued below)
 
 ```

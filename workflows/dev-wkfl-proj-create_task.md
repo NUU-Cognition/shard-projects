@@ -1,3 +1,5 @@
+> [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
+
 This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
 
 # Workflow: Create Task
@@ -13,10 +15,11 @@ Spec a new task for later execution. This is a **planning** workflow — it crea
 ## Stage 1: Task Creation
 
 - Create the task using the @tmp-proj-task template. Get the next task number with `flint helper type newnumber Task`.
-- Set the `increment` field to link to the parent increment using `[[Hyperlink]]` syntax. All tasks must belong to an increment. To determine the increment:
-  1. If user specifies an increment, use that
-  2. If the task clearly relates to an active increment (check increment titles), use that
-  3. Otherwise, default to the current adhoc increment (e.g., `6.A`)
+- Set the `from` field if a parent context is known. The `from` field is optional — leave it blank unless a parent is clear:
+  1. If user specifies a parent (increment or mission), use that
+  2. If the task is part of a mission, link to the mission
+  3. If the task clearly relates to an active increment, use that
+  4. Otherwise, leave `from` blank
 - Set status to `todo`
 - **Rename the file** to match the chosen title. If the file was created as a stub with a placeholder name (e.g. `(Task) 589 New Task.md`), rename it to `(Task) 589 <Chosen Title>.md` so the filename reflects the actual task content.
 - Leave priority and due date blank unless specified
@@ -31,10 +34,10 @@ Spec a new task for later execution. This is a **planning** workflow — it crea
 ## Stage 3: Finalise
 
 - Set priority and due date if discussed during review
-- Update the increment log with an entry for the new task
+- If the task has a `from` that points to an increment, update that increment's log with an entry for the new task
 - Confirm the spec is ready to work on
 
 # Output
 
 - New task specification in `todo` status
-- Increment log updated
+- Increment log updated (if `from` points to an increment)

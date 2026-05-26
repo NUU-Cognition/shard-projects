@@ -1,3 +1,5 @@
+> [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
+
 # Skill: Supersede Task
 
 Create a succession link between an old task and its successor. The `superseded-by` field is a cross-status relationship — it records that a successor exists independently of the old task's terminal status.

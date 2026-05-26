@@ -1,6 +1,6 @@
 # Projects Shard — Headless
 
-You are running headless via Orbh. This file replaces `init-proj.md` for headless sessions. The task lifecycle, increment rules, and checkbox tracking are unchanged — read `init-proj.md` for those fundamentals. Tasks are created using the [[tmp-proj-task-v0.1]] template. This file teaches you what's different when there's no human at the terminal.
+You are running headless via Orbh. This file replaces `dev-init-proj.md` for headless sessions. The task lifecycle, `from` field conventions, and checkbox tracking are unchanged — read `dev-init-proj.md` for those fundamentals. Tasks are created using the [[dev-tmp-proj-task-v0.2]] template. This file teaches you what's different when there's no human at the terminal.
 
 ## Headless Workflows
 
@@ -8,16 +8,16 @@ Use these instead of the interactive `wkfl-*` counterparts. They remove stage ga
 
 | Workflow | File | Replaces | When to use |
 |----------|------|----------|-------------|
-| Do Task | `hwkfl-proj-do_task.md` | `wkfl-proj-do_task.md` | Execute or refine an existing task |
-| Review Task | `hwkfl-proj-review_task.md` | `wkfl-proj-review_task.md` | QA review of completed work |
-| Create Task | `hwkfl-proj-create_task.md` | `wkfl-proj-create_task.md` | Fill in a stub created by the Plate |
-| Create and Do Task | `hwkfl-proj-create_and_do_task.md` | `wkfl-proj-create_and_do_task.md` | Create and execute in one session |
+| Do Task | `dev-hwkfl-proj-do_task.md` | `dev-wkfl-proj-do_task.md` | Execute or refine an existing task |
+| Review Task | `dev-hwkfl-proj-review_task.md` | `dev-wkfl-proj-review_task.md` | QA review of completed work |
+| Create Task | `dev-hwkfl-proj-create_task.md` | `dev-wkfl-proj-create_task.md` | Fill in a stub created by the Plate |
+| Create and Do Task | `dev-hwkfl-proj-create_and_do_task.md` | `dev-wkfl-proj-create_and_do_task.md` | Create and execute in one session |
 
 Skills (`sk-proj-*`) work unchanged in headless mode — they're atomic and have no interactive checkpoints.
 
 ## Orbh Interface Schema
 
-In headless mode, you communicate progress via `flint orbh set <id> <key> <value>`. The Plate UI and `flint orbh watch` read these keys. **Set them consistently** so the human can track your work without reading the transcript.
+In headless mode, you communicate progress via `flint orbh session <id> set <key> <value>`. The Plate UI and `flint orbh watch` read these keys. **Set them consistently** so the human can track your work without reading the transcript.
 
 ### Required Keys
 
@@ -90,7 +90,7 @@ progress: "4/4 requirements"
 
 ## Repo Work and WIP Commits
 
-If the task has a `git-repos` field, you must commit your changes in each listed repo as a WIP commit before completing. The format is `[OR] wip: <Flint Name>/(Task) NNN Name`. After each commit, record the SHA in the task's `wip-commits` field (annotated with repo name in parens if multiple repos). Stage only the files you edited — never `git add -A`. See [[knw-proj-wip_commits]] for full details. The execution workflows include this step explicitly.
+If the task has a `git-repos` field, you must commit your changes in each listed repo as a WIP commit before completing. The format is `[OR] wip: <Flint Name>/(Task) NNN Name` as the subject line, with a short paragraph in the commit body describing what changed. After each commit, record the SHA in the task's `wip-commits` field (annotated with repo name in parens if multiple repos). Stage only the files you edited — never `git add -A`. See [[dev-knw-proj-wip_commits]] for full details. The execution workflows include this step explicitly.
 
 ## Interaction Model
 
@@ -102,7 +102,7 @@ If the task has a `git-repos` field, you must commit your changes in each listed
 | "Converse to refine" | Proceed autonomously; defer if genuinely stuck |
 | "Once the user confirms" | Skip — there's no confirmation step |
 | Status `blocked` + wait | `flint orbh request` (deferred) — exit and resume later |
-| Print completion summary | `flint orbh return` — structured result stored on the session |
+| Print completion summary | `flint orbh session <id> return` — structured result stored on the session |
 
 ## Artifact Tracking
 
@@ -114,10 +114,10 @@ flint orbh artifact <id> "(Task) 341 Pre-Pass Title and Description on Session L
 
 ## Result Delivery
 
-Every headless workflow **must** end with `flint orbh return`. The result is the primary output of your session — the human and the Plate read it. Keep it concise:
+Every headless workflow **must** end with `flint orbh session <id> return`. The result is the primary output of your session — the human and the Plate read it. Keep it concise:
 
 ```bash
-flint orbh return <id> "Completed task (Task) 341. Implemented all 4 requirements: <brief list>. Moved to review."
+flint orbh session <id> return "Completed task (Task) 341. Implemented all 4 requirements: <brief list>. Moved to review."
 ```
 
 If you exit without calling return, the session is marked `suspended` and the human has no structured output to read.

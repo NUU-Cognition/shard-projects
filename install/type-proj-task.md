@@ -1,9 +1,3 @@
----
-id: 47cb05ed-ad06-4b7d-8a56-00e10302b613
-tags:
-  - "#f/metadata"
-  - "#f/type"
----
 
 # Task
 
@@ -31,4 +25,4 @@ Any status → deprecated (terminal)
 
 ## Templates
 
-- [[tmp-proj-task-v0.1]] — Standard task
+- [[tmp-proj-task-v0.2]] — Standard task (replaces v0.1 — `from` field instead of `increment`)

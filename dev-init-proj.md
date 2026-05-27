@@ -28,6 +28,7 @@ The **Backlog dashboard** is an execution view — it shows all tasks grouped by
 | Tool | Type | Purpose |
 |------|------|---------|
 | Create Task | Workflow | Spec a task for later — sets it as `todo`, refines with human review |
+| Scope Task | Workflow | Research-heavy task creation — investigate, propose, and persist findings in the task's Notes |
 | Deprecate Task | Skill | Triage a task out of the backlog |
 
 ## Tasks and the From Field
@@ -178,6 +179,7 @@ When working on tasks, agents must tick off checkbox items (`- [ ]` → `- [x]`)
 | Workflow | File | Purpose |
 |----------|------|---------|
 | Create Task | `dev-wkfl-proj-create_task.md` | Spec a new task with human review (planning) |
+| Scope Task | `dev-wkfl-proj-scope_task.md` | Research the problem space, then spec a task with a written proposal in Notes (planning) |
 | Do Task | `dev-wkfl-proj-do_task.md` | Execute a task through to completion |
 | Create and Do Task | `dev-wkfl-proj-create_and_do_task.md` | Create and immediately execute a task |
 | Review Task | `dev-wkfl-proj-review_task.md` | QA review — verify completed work against requirements |

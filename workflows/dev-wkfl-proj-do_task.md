@@ -1,3 +1,8 @@
+---
+orbh-sessions:
+  - "[[87347e6b-2363-4434-9a98-f1d641049fa7]]"
+---
+
 > [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
 
 This workflow belongs to the Projects shard. Ensure you have @init-proj.md in context before continuing.
@@ -15,6 +20,14 @@ Execute an existing task through to completion. This is an **execution** workflo
 
 ## Stage 1: Task Work
 
+- If `ORBH_SESSION_ID` is set, add the final task path to this session's Markdown pins:
+  ```bash
+  if [ -n "${ORBH_SESSION_ID:-}" ]; then
+    flint helper pins add "Mesh/Types/Tasks/(Task) NNN Title.md"
+  fi
+  ```
+  Replace the example with the actual path relative to the Flint root. Use the path after any task rename.
+  Keep the pin after completion. Use `add` to preserve other pins. Artifact tracking remains a separate action.
 - Set status to `in-progress`
 - Read the task fully and implement until finished, or until you've done everything possible without human input
 - Whenever you complete a requirement or definition-of-done checkbox, tick it immediately (`- [ ]` → `- [x]`)

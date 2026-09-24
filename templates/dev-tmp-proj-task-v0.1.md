@@ -15,7 +15,7 @@ completed: [ISO 8601]
 priority: [empty|low|medium|high]
 [agent]-sessions: /* replace [agent] with your agent type (claude, codex, etc.) */
 template: "[[dev-tmp-proj-task-v0.1]]"
-authors: /* from .flint/identity.json; omit if no identity set */
+authors: /* from flint whoami (the machine-global Name); omit if no Name is set */
   - "[[@Person Name]]"
 artifacts-created: /* optional — list Mesh artifacts (reports, notepads, specs, etc.) created as a result of this task. Only Mesh artifacts, not code or external outputs. Populate as artifacts are created during execution. */
   - "[[artifact wikilink]]"

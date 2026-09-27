@@ -1,6 +1,6 @@
-shard-spec: "0.3.0"
+shard-spec: "0.4.0"
+shard: "@nuucognition/projects"
 id: f773ad9e-9a03-4703-bb12-f5ba1f9ad4cd
-org: nuucognition
 source:
   id: 25ac0e34-5a9e-403e-aa1a-339c587eb45b
 version: "1.4.0"

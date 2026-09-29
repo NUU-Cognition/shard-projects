@@ -50,7 +50,7 @@ If there is no `git-repos` field, skip this step.
 
 ### Checking the Views
 
-If the task has a `git-repos` field and `flint shard list` shows `orbc`, follow [[dev-sk-orbc-check_after_task]] after the WIP commits. The check is an aid: it never blocks the review or the close of the task. When the commits are on a worktree branch that is not landed, write `OrbCode: run sk-orbc-check_after_task after the landing` in the Task Log and in the result.
+If the task has a `git-repos` field and `flint shard list` shows `orbc`, follow [[sk-orbc-check_after_task]] after the WIP commits. The check is an aid: it never blocks the review or the close of the task. When the commits are on a worktree branch that is not landed, write `OrbCode: run sk-orbc-check_after_task after the landing` in the Task Log and in the result.
 
 ## Stage 2: Task Review
 

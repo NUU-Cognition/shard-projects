@@ -82,6 +82,10 @@ If the task has a `git-repos` field, you must commit your changes as WIP commits
 
 If there is no `git-repos` field, skip this step.
 
+### Checking the Views
+
+If the task has a `git-repos` field and `flint shard list` shows `orbc`, follow [[dev-sk-orbc-check_after_task]] after the WIP commits. The check is an aid: it never blocks the review or the close of the task. When the commits are on a worktree branch that is not landed, write `OrbCode: run sk-orbc-check_after_task after the landing` in the Task Log and in the result.
+
 ## 3. Complete
 
 - Verify all requirement and definition-of-done checkboxes are ticked

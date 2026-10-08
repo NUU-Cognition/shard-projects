@@ -3,7 +3,7 @@ shard: "@nuucognition/projects"
 id: f773ad9e-9a03-4703-bb12-f5ba1f9ad4cd
 source:
   id: 25ac0e34-5a9e-403e-aa1a-339c587eb45b
-version: "1.4.2"
+version: "1.5.0"
 name: Projects
 shorthand: proj
 description: High-level planning and task management

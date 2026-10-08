@@ -155,7 +155,7 @@ Stage only the files you edited (never `git add -A`). See [[dev-knw-proj-wip_com
 
 The `checkpointed` and `pr` fields on tasks are written by OrbRepo agents (checkpoint and close) — never set them yourself.
 
-After the WIP commits, a Flint with the OrbCode shard follows [[sk-orbc-check_after_task]].
+After the WIP commits, a Flint with the ITE shard follows [[sk-ite-check_after_task]].
 
 ## Checkbox Tracking
 

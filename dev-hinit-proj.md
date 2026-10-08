@@ -92,7 +92,7 @@ progress: "4/4 requirements"
 
 If the task has a `git-repos` field, you must commit your changes in each listed repo as a WIP commit before completing. The format is `[OR] wip: <Flint Name>/(Task) NNN Name` as the subject line, with a short paragraph in the commit body describing what changed. After each commit, record the SHA in the task's `wip-commits` field (annotated with repo name in parens if multiple repos). Stage only the files you edited — never `git add -A`. See [[dev-knw-proj-wip_commits]] for full details. The execution workflows include this step explicitly.
 
-After the WIP commits, a Flint with the OrbCode shard follows [[sk-orbc-check_after_task]].
+After the WIP commits, a Flint with the ITE shard follows [[sk-ite-check_after_task]].
 
 ## Interaction Model
 

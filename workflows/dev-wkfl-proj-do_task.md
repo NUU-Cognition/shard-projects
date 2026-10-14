@@ -11,6 +11,16 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 Execute an existing task through to completion. This is an **execution** workflow — the task already has a specification, and this workflow works it to done.
 
+# Invocation
+
+You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The stages below do not change.
+
+- Start the workflow with `flint shard invoke proj do_task --input task="(Task) NNN Title"`. When the task is `todo`, the behaviour `task-open` sets `in-progress`, adds the session to `orbh-sessions`, and pins the task. Then these edits of Stage 1 are done.
+- At Stage 3: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 3: `done`, `completed`, the Task Log line, and the increment log line.
+- Pass `--with task-confirm` only when the person asks for it in the current message.
+- To stop the work for now, close or return with `--with task-defer="<reason>"`. The script `task-defer` sets `deferred` and logs the reason.
+- When no invocation is open, do the edits of each stage by hand.
+
 # Input
 
 - Task specification (an existing Task artifact)

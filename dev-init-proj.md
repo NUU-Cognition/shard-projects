@@ -161,6 +161,24 @@ After the WIP commits, a Flint with the ITE shard follows [[sk-ite-check_after_t
 
 When working on tasks, agents must tick off checkbox items (`- [ ]` → `- [x]`) immediately upon completing each requirement or done criterion. This keeps the task file as the single source of truth for progress.
 
+## Invocations
+
+The workflows Do Task and Create and Do Task have an invocation file (`wkfl-proj-<name>.invocation.json`). Start them with `flint shard invoke proj do_task --input task="(Task) NNN Title"` or `flint shard invoke proj create_and_do_task`. The invocation file declares these behaviours:
+
+| Behaviour | Place | Runs | When `task.status` is | Action |
+|---|---|---|---|---|
+| `task-open` | `invocation.open` | Each time | `todo` | Script `task-open`: sets `in-progress`, adds the session to `orbh-sessions`, and pins the task |
+| `task-hint` | `session.close`, before | Each time | `review` | Says that `--with task-confirm` moves the task to done |
+| `task-return-check` | `session.return --finish`, before | Each time | `todo`, `in-progress` | Says that the task is still open, and names `--with task-defer` |
+| `task-confirm` | `session.close`, `session.return`, before | Only with `--with task-confirm` (a person) | `review`, `reviewed` | Script `task-close`: sets `done` and `completed`, and writes the Task Log line and the increment log line |
+| `task-defer` | `session.close`, `session.return`, before | Only with `--with task-defer="<reason>"` | `in-progress`, `blocked` | Script `task-defer`: sets `deferred` and writes the reason in the Task Log |
+
+- `--with task-confirm` is the manual human action `reviewed → done`. An agent passes it only when the person asks for it in the current message.
+- Each script writes one Task Log line with the behaviour, the invocation, and the session. A second run on a task that is already in the target state changes nothing.
+- `--no-behaviours` on the verb runs no behaviour. The invocation record keeps this choice.
+- The scripts also run by hand: `flint shard proj task-close "(Task) NNN Title"`, and `flint shard proj task-defer "(Task) NNN Title" "<reason>"`.
+- With no invocation, the workflows work as before: the agent does the edits by hand.
+
 # Dashboards
 
 | Dashboard | Purpose | Maintained By |

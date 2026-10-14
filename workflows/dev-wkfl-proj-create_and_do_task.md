@@ -11,6 +11,17 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 Create a task and immediately execute it in a single workflow. This is an **execution** workflow — the task is created and worked to completion without a separate planning phase.
 
+# Invocation
+
+You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The stages below do not change.
+
+- Start the workflow with `flint shard invoke proj create_and_do_task`. The task does not exist yet, so give no task input.
+- After Stage 1, set the task input: `flint shard invocations set-input task="(Task) NNN Title"`. Use the title after the rename. The close behaviours find the task through this input.
+- At Stage 4: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 4: `done`, `completed`, the Task Log line, and the increment log line.
+- Pass `--with task-confirm` only when the person asks for it in the current message.
+- To stop the work for now, close or return with `--with task-defer="<reason>"`. The script `task-defer` sets `deferred` and logs the reason.
+- When no invocation is open, do the edits of each stage by hand.
+
 # Input
 
 - Context of a task

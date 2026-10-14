@@ -6,7 +6,8 @@
 // FLINT_BEHAVIOUR_VALUE come first; the arguments are for a run by hand.
 // It moves the task from in-progress or blocked to deferred, adds ORBH_SESSION_ID to orbh-sessions, and appends one
 // line with the reason to the Task Log. It refuses an empty reason with exit 1.
-// A task that is already deferred changes nothing. It refuses any other status with exit 1.
+// A task that is already deferred changes nothing. It refuses any other status, and every frontmatter form that is
+// not in the subset of task-lib, with exit 1 before any write.
 // Output: one result line.
 
 const fs = require('fs');
@@ -23,17 +24,18 @@ lib.run('task-defer', (argv) => {
   }
   const { title, file } = lib.findMeshFile(env.root, env.task, 'task');
   const name = lib.shortName(title);
-  const doc = lib.readDoc(file);
-  const status = lib.getScalar(doc, 'status');
 
-  if (status === 'deferred') return `${name} is already deferred. Nothing changed.`;
-  if (status !== 'in-progress' && status !== 'blocked') {
-    throw new lib.TaskError(`${name} is ${status || 'without a status'}, not in-progress or blocked. Nothing changed.`);
-  }
-
-  lib.setScalar(doc, 'status', 'deferred', ['tags']);
-  lib.trackSession(doc, env.session);
-  lib.appendTaskLog(doc, `- ${lib.today()}: ${status} → deferred: ${reason} (${lib.provenance(env, 'task-defer')})`);
-  lib.writeDoc(doc);
-  return `${name} ${status} → deferred: ${reason}`;
+  return lib.withLocks(env.root, [file], () => {
+    const doc = lib.readDoc(env.root, file, 'task');
+    const status = lib.getScalar(doc, 'status');
+    if (status === 'deferred') return `${name} is already deferred. Nothing changed.`;
+    if (status !== 'in-progress' && status !== 'blocked') {
+      throw new lib.TaskError(`${name} is ${status || 'without a status'}, not in-progress or blocked. Nothing changed.`);
+    }
+    lib.setScalar(doc, 'status', 'deferred', ['tags']);
+    lib.trackSession(doc, env.session);
+    lib.appendTaskLog(doc, `- ${lib.today()}: ${status} → deferred: ${reason} (${lib.provenance(env, 'task-defer')})`);
+    lib.writeDoc(doc);
+    return `${name} ${status} → deferred: ${reason}`;
+  });
 });

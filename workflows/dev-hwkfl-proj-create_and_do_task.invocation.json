@@ -53,7 +53,8 @@
       "when": {
         "task.status": [
           "review",
-          "reviewed"
+          "reviewed",
+          "done"
         ]
       },
       "run": "task-close"

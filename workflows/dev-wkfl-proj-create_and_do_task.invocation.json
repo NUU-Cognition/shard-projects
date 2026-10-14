@@ -29,7 +29,7 @@
       "phase": "before",
       "opt-in": true,
       "by": "person",
-      "when": { "task.status": ["review", "reviewed"] },
+      "when": { "task.status": ["review", "reviewed", "done"] },
       "run": "task-close"
     },
     {

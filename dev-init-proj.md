@@ -170,7 +170,7 @@ The workflows Do Task and Create and Do Task have an invocation file (`wkfl-proj
 | `task-open` | `invocation.open` | Each time | `todo` | Script `task-open`: sets `in-progress`, adds the session to `orbh-sessions`, and pins the task |
 | `task-hint` | `session.close`, before | Each time | `review` | Says that `--with task-confirm` moves the task to done |
 | `task-return-check` | `session.return --finish`, before | Each time | `todo`, `in-progress` | Says that the task is still open, and names `--with task-defer` |
-| `task-confirm` | `session.close`, `session.return`, before | Only with `--with task-confirm` (a person) | `review`, `reviewed` | Script `task-close`: sets `done` and `completed`, and writes the Task Log line and the increment log line |
+| `task-confirm` | `session.close`, `session.return`, before | Only with `--with task-confirm` (a person) | `review`, `reviewed`, `done` | Script `task-close`: sets `done` and `completed`, and writes the Task Log line and the increment log line. On a `done` task, it only adds a missing increment row |
 | `task-defer` | `session.close`, `session.return`, before | Only with `--with task-defer="<reason>"` | `in-progress`, `blocked` | Script `task-defer`: sets `deferred` and writes the reason in the Task Log |
 
 - `--with task-confirm` is the manual human action `reviewed → done`. An agent passes it only when the person asks for it in the current message.

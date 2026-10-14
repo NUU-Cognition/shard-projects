@@ -11,6 +11,17 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 Autonomously create a task and execute it to completion in a single Orbh session. Combines spec creation and execution without interactive review stages.
 
+# Invocation
+
+You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The steps below do not change.
+
+- Start the workflow with `flint shard invoke proj hwkfl-proj-create_and_do_task --headless`. The task does not exist yet, so give no task input.
+- After step 1, set the task input: `flint shard invocations set-input task="(Task) NNN Title"`. Use the title after the rename. The return behaviours find the task through this input.
+- Never pass `--with task-confirm`. Only a person confirms a task. After step 3 the task stays in `review`.
+- To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
+- When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
+- When no invocation is open, do the edits of each step by hand.
+
 # Input
 
 - Context of a task

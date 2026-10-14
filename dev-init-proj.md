@@ -178,6 +178,8 @@ The workflows Do Task and Create and Do Task have an invocation file (`wkfl-proj
 - `--no-behaviours` on the verb runs no behaviour. The invocation record keeps this choice.
 - The scripts also run by hand: `flint shard proj task-close "(Task) NNN Title"`, and `flint shard proj task-defer "(Task) NNN Title" "<reason>"`.
 - With no invocation, the workflows work as before: the agent does the edits by hand.
+- The headless workflows have invocation files with the same behaviours. Start them with `flint shard invoke proj hwkfl-proj-do_task --headless --input task="(Task) NNN Title"` or `flint shard invoke proj hwkfl-proj-create_and_do_task --headless`. In a headless workflow, the agent never passes `--with task-confirm`. It may pass `--with task-defer="<reason>"` on `flint orbh session return`.
+- The scripts edit only a strict subset of the YAML frontmatter (unquoted keys at column 0; one-line values for `status`, `completed`, and `from`; a block list, an empty value, or a one-line flow list for `orbh-sessions`). They refuse every other form before any write, with the line that is not supported. Then edit the file by hand.
 
 # Dashboards
 

@@ -11,6 +11,16 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 Execute an existing task autonomously to completion via Orbh. No interactive stages — blockers use deferred questions, progress is reported via the Orbh interface.
 
+# Invocation
+
+You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The steps below do not change.
+
+- Start the workflow with `flint shard invoke proj hwkfl-proj-do_task --headless --input task="(Task) NNN Title"`. When the task is `todo`, the behaviour `task-open` sets `in-progress`, adds the session to `orbh-sessions`, and pins the task. Then these edits of step 1 are done.
+- Never pass `--with task-confirm`. Only a person confirms a task. After step 3 the task stays in `review`.
+- To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
+- When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
+- When no invocation is open, do the edits of each step by hand.
+
 # Input
 
 - Task specification (an existing Task artifact)

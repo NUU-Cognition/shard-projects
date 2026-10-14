@@ -1,0 +1,104 @@
+{
+  "format": "shard-invocation/0.1",
+  "workflow": "hwkfl-proj-create_and_do_task",
+  "title": "Headless Create and Do Task",
+  "inputs": {
+    "task": {
+      "kind": "artifact",
+      "type": "Task",
+      "required": false,
+      "description": "The title of the task. The task does not exist at invoke time: set it after step 1 with flint shard invocations set-input task=\"(Task) NNN Title\"."
+    }
+  },
+  "steps": [
+    {
+      "id": "create",
+      "title": "Create",
+      "by": "agent",
+      "evidence": "required"
+    },
+    {
+      "id": "execute",
+      "title": "Execute",
+      "by": "agent",
+      "evidence": "required"
+    },
+    {
+      "id": "complete",
+      "title": "Complete",
+      "by": "agent",
+      "evidence": "required"
+    }
+  ],
+  "behaviours": [
+    {
+      "id": "task-open",
+      "on": "invocation.open",
+      "when": {
+        "task.status": [
+          "todo"
+        ]
+      },
+      "run": "task-open"
+    },
+    {
+      "id": "task-confirm",
+      "on": [
+        "session.close",
+        "session.return"
+      ],
+      "phase": "before",
+      "opt-in": true,
+      "by": "person",
+      "when": {
+        "task.status": [
+          "review",
+          "reviewed"
+        ]
+      },
+      "run": "task-close"
+    },
+    {
+      "id": "task-defer",
+      "on": [
+        "session.close",
+        "session.return"
+      ],
+      "phase": "before",
+      "opt-in": true,
+      "when": {
+        "task.status": [
+          "in-progress",
+          "blocked"
+        ]
+      },
+      "run": "task-defer"
+    },
+    {
+      "id": "task-hint",
+      "on": "session.close",
+      "phase": "before",
+      "when": {
+        "task.status": [
+          "review"
+        ]
+      },
+      "say": "{{task}} is in review. Close with --with task-confirm to move it to done, or keep it in review."
+    },
+    {
+      "id": "task-return-check",
+      "on": "session.return",
+      "phase": "before",
+      "disposition": [
+        "finish"
+      ],
+      "when": {
+        "task.status": [
+          "todo",
+          "in-progress"
+        ]
+      },
+      "say": "{{task}} is still open: it is not in review. Move it to review when the work is done, or return with --with task-defer=\"<reason>\" to defer it."
+    }
+  ]
+}

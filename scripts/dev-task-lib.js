@@ -19,6 +19,7 @@
 //   in the same folder.
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
@@ -100,13 +101,16 @@ function meshDir(root) {
 
 /**
  * Check the path from the Flint root to a file: each folder is a real folder (no symbolic link), the file is a
- * regular file, and its real path is inside the real Flint root. Returns the lstat of the file.
+ * regular file, and its real path is inside the real Flint root. Returns the lstat of the file and the chain: the
+ * dev and ino of the root and of each folder from the root to the folder of the file.
  */
 function checkPath(root, file) {
   const relative = path.relative(root, file);
   if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
     throw new TaskError(`${file} is not inside the Flint root ${root}. Nothing changed.`);
   }
+  const rootStat = fs.statSync(root);
+  const chain = [{ path: root, dev: rootStat.dev, ino: rootStat.ino, follow: true }];
   const parts = relative.split(path.sep);
   let current = root;
   let stat = null;
@@ -120,13 +124,33 @@ function checkPath(root, file) {
     if (last ? !stat.isFile() : !stat.isDirectory()) {
       throw new TaskError(`${shown} is not a ${last ? 'regular file' : 'folder'}. Nothing changed.`);
     }
+    if (!last) chain.push({ path: current, dev: stat.dev, ino: stat.ino, follow: false });
   }
   const realRoot = fs.realpathSync(root);
   const realFile = fs.realpathSync(file);
   if (!realFile.startsWith(realRoot + path.sep)) {
     throw new TaskError(`${relative} is outside the real Flint root ${realRoot}. Nothing changed.`);
   }
-  return stat;
+  return { stat, chain, real: realFile };
+}
+
+/**
+ * Check the chain of checkPath again: the root and each folder down to the folder of the file have the same dev and
+ * ino, and no folder below the root is now a symbolic link. Throws when one changed.
+ */
+function checkChain(root, name, chain) {
+  for (const part of chain) {
+    let now = null;
+    try {
+      now = part.follow ? fs.statSync(part.path) : fs.lstatSync(part.path);
+    } catch {
+      now = null;
+    }
+    if (!now || (!part.follow && (now.isSymbolicLink() || !now.isDirectory())) || now.dev !== part.dev || now.ino !== part.ino) {
+      const shown = path.relative(root, part.path) || 'the Flint root';
+      throw new TaskError(`${shown} changed during the run (another folder or a symbolic link). ${name} is not written.`);
+    }
+  }
 }
 
 /** All regular files named `<title>.md` under the folder, in a stable order. A symbolic link is never followed. */
@@ -184,8 +208,13 @@ function findIncrement(root, increment) {
 // ---------------------------------------------------------------------------
 // Locks: one folder for each document under <FLINT_ROOT>/.flint/locks/
 
-const LOCK_STALE_MS = 60000;
+/** A lock whose owner process is gone (ESRCH on this host) is stale after this time. A live owner is never stale. */
+const LOCK_STALE_MS = 10000;
+/** A lock with no valid owner file (its holder died between the mkdir and the owner write) is stale after this time. */
+const LOCK_ORPHAN_MS = 60000;
+/** The longest wait for one lock. */
 const LOCK_WAIT_MS = 15000;
+const LOCK_OWNER_FILE = 'owner';
 
 function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -205,48 +234,182 @@ function realFolder(root, folder) {
   return folder;
 }
 
-/** Take the lock of one document: an exclusive mkdir. A lock older than LOCK_STALE_MS is stale and is taken over. */
-function acquireLock(root, real) {
+/** False only on proof that no process has this pid on this machine (ESRCH). EPERM means that the process lives. */
+function pidAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== 'ESRCH';
+  }
+}
+
+/** The owner of a lock folder ({ pid, token, host }), or null when the owner file is missing or not valid. */
+function readOwner(dir) {
+  try {
+    const value = JSON.parse(fs.readFileSync(path.join(dir, LOCK_OWNER_FILE), 'utf8'));
+    if (value && Number.isInteger(value.pid) && typeof value.token === 'string' && value.token !== '' && typeof value.host === 'string') {
+      return value;
+    }
+  } catch {
+    // No owner file, or not valid.
+  }
+  return null;
+}
+
+/** One try to take the lock: an exclusive mkdir, then the owner file with the pid and a random token. */
+function tryAcquire(dir, token, real) {
+  try {
+    fs.mkdirSync(dir, { mode: 0o700 });
+  } catch (error) {
+    if (error.code === 'EEXIST') return false;
+    throw error;
+  }
+  try {
+    const owner = { pid: process.pid, token, host: os.hostname(), at: new Date().toISOString(), path: real };
+    fs.writeFileSync(path.join(dir, LOCK_OWNER_FILE), JSON.stringify(owner), { flag: 'wx', mode: 0o600 });
+  } catch (error) {
+    // This try has no owner file: remove its empty folder, so that no other run waits for it.
+    try {
+      fs.rmdirSync(dir);
+    } catch {
+      // Not empty: it is not the folder of this try.
+    }
+    if (error.code === 'EEXIST' || error.code === 'ENOENT') return false;
+    throw error;
+  }
+  return true;
+}
+
+/**
+ * Take over a stale lock. A lock is stale when its owner process is gone (the same host, ESRCH) and the lock is older
+ * than LOCK_STALE_MS, or when it has no valid owner file and is older than LOCK_ORPHAN_MS. Age alone never makes a
+ * lock with a live owner stale. The takeover reads the owner again just before the rename, renames the folder to a
+ * unique name (only one run wins the rename), and checks that it moved the same folder (dev, ino, mtime) with the
+ * same owner token. Else it puts the folder back.
+ */
+function reclaimStaleLock(dir) {
+  const observed = lstatOrNull(dir);
+  if (!observed) return 'gone';
+  if (observed.isSymbolicLink() || !observed.isDirectory()) throw new TaskError(`The lock ${dir} is not a folder. Nothing changed.`);
+  const owner = readOwner(dir);
+  const age = Date.now() - observed.mtimeMs;
+  const stale = owner ? owner.host === os.hostname() && age > LOCK_STALE_MS && !pidAlive(owner.pid) : age > LOCK_ORPHAN_MS;
+  if (!stale) return 'not-stale';
+  const again = readOwner(dir);
+  if ((owner ? again?.token !== owner.token : again !== null)) return 'not-stale';
+  const tomb = `${dir}.stale-${crypto.randomBytes(6).toString('hex')}`;
+  try {
+    fs.renameSync(dir, tomb);
+  } catch (error) {
+    if (error.code === 'ENOENT') return 'gone';
+    throw error;
+  }
+  const moved = lstatOrNull(tomb);
+  const movedOwner = moved ? readOwner(tomb) : null;
+  const same = moved
+    && moved.dev === observed.dev && moved.ino === observed.ino && moved.mtimeMs === observed.mtimeMs
+    && (owner ? movedOwner?.token === owner.token : movedOwner === null);
+  if (!same) {
+    // A new lock came between the check and the rename: give it back.
+    try {
+      fs.renameSync(tomb, dir);
+    } catch {
+      throw new TaskError(`A lock takeover moved the live lock ${dir} of another run to ${tomb} and could not put it back. Nothing changed.`);
+    }
+    return 'not-stale';
+  }
+  fs.rmSync(tomb, { recursive: true, force: true });
+  return 'reclaimed';
+}
+
+/** Release a lock only when its owner file has the token of this run. */
+function releaseLock(lock) {
+  const tomb = `${lock.dir}.release-${crypto.randomBytes(6).toString('hex')}`;
+  let moved = false;
+  for (let tries = 0; tries < LOCK_MOVED_TRIES && !moved; tries += 1) {
+    try {
+      fs.renameSync(lock.dir, tomb);
+      moved = true;
+    } catch (error) {
+      // ENOENT: a takeover of another run can have moved the lock away for a moment. Else: nothing to release.
+      if (error.code !== 'ENOENT') return;
+      sleep(LOCK_MOVED_SLEEP_MS);
+    }
+  }
+  if (!moved) return;
+  if (readOwner(tomb)?.token !== lock.token) {
+    // Not the lock of this run: put it back.
+    try {
+      fs.renameSync(tomb, lock.dir);
+    } catch {
+      // Nothing more to do: the fence of its owner refuses its write.
+    }
+    return;
+  }
+  fs.rmSync(tomb, { recursive: true, force: true });
+}
+
+/** The locks that this process holds now, by the real path of the document. writeDoc checks them (the fence). */
+const heldLocks = new Map();
+
+/** Take the lock of one document. Waits up to LOCK_WAIT_MS. */
+function acquireLock(root, file, real) {
   const locks = realFolder(root, path.join(realFolder(root, path.join(root, '.flint')), 'locks'));
   const hash = crypto.createHash('sha256').update(real).digest('hex').slice(0, 32);
   const dir = path.join(locks, `task-doc-${hash}.lock`);
+  const token = crypto.randomBytes(16).toString('hex');
   const deadline = Date.now() + LOCK_WAIT_MS;
   for (;;) {
-    try {
-      fs.mkdirSync(dir, { mode: 0o700 });
-      fs.writeFileSync(path.join(dir, 'owner'), `${process.pid} ${new Date().toISOString()} ${real}\n`, { flag: 'wx' });
-      return dir;
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-    }
-    const stat = lstatOrNull(dir);
-    if (stat && Date.now() - stat.mtimeMs > LOCK_STALE_MS) {
-      // Move the stale lock aside first. Only one waiter can move it, so two waiters never both take it over.
-      const aside = `${dir}.stale-${crypto.randomBytes(6).toString('hex')}`;
-      try {
-        fs.renameSync(dir, aside);
-        fs.rmSync(aside, { recursive: true, force: true });
-      } catch {
-        // Another waiter moved it first.
-      }
-      continue;
-    }
+    if (tryAcquire(dir, token, real)) return { dir, token, real };
+    const reclaimed = reclaimStaleLock(dir);
+    if (reclaimed !== 'not-stale') continue;
     if (Date.now() > deadline) {
-      throw new TaskError(`Another run edits ${path.relative(root, real)} (the lock ${path.relative(root, dir)} is held). Run again later. Nothing changed.`);
+      const owner = readOwner(dir);
+      throw new TaskError(`Another run edits ${path.relative(root, file)} (the lock ${path.relative(root, dir)} is held${owner ? ` by the process ${owner.pid}` : ''}). Run again later. Nothing changed.`);
     }
     sleep(25);
   }
 }
 
+/** The tries of the fence and of the release while a takeover of another run has moved the lock away for a moment. */
+const LOCK_MOVED_TRIES = 50;
+const LOCK_MOVED_SLEEP_MS = 10;
+
+/**
+ * The fence before a write: the lock of the document is still held by this run (the owner token). A takeover of
+ * another run can move this lock away and put it back (reclaimStaleLock), so a missing owner file is read again for
+ * up to LOCK_MOVED_TRIES * LOCK_MOVED_SLEEP_MS. Another token means that the lock is lost.
+ */
+function assertHeld(doc) {
+  const lock = heldLocks.get(doc.real);
+  if (!lock) throw new TaskError(`${doc.name} is not locked by this run. It is not written.`);
+  for (let tries = 0; tries < LOCK_MOVED_TRIES; tries += 1) {
+    const owner = readOwner(lock.dir);
+    if (owner && owner.token === lock.token) return;
+    if (owner) break;
+    sleep(LOCK_MOVED_SLEEP_MS);
+  }
+  throw new TaskError(`The lock of ${doc.name} was lost. It is not written.`);
+}
+
 /** Run `fn` while this process holds the locks of the files, taken in the order of the sorted real paths. */
 function withLocks(root, files, fn) {
-  const reals = [...new Set(files.map((file) => fs.realpathSync(file)))].sort();
+  const byReal = new Map(files.map((file) => [fs.realpathSync(file), file]));
+  const reals = [...byReal.keys()].sort();
   const held = [];
   try {
-    for (const real of reals) held.push(acquireLock(root, real));
+    for (const real of reals) {
+      const lock = acquireLock(root, byReal.get(real), real);
+      held.push(lock);
+      heldLocks.set(real, lock);
+    }
     return fn();
   } finally {
-    for (const dir of held.reverse()) fs.rmSync(dir, { recursive: true, force: true });
+    for (const lock of held.reverse()) {
+      heldLocks.delete(lock.real);
+      releaseLock(lock);
+    }
   }
 }
 
@@ -276,7 +439,7 @@ function splitLines(text) {
  */
 function readDoc(root, file, kind) {
   const name = path.relative(root, file);
-  const stat = checkPath(root, file);
+  const { stat, chain, real } = checkPath(root, file);
   const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
   let buffer;
   let fstat;
@@ -295,7 +458,7 @@ function readDoc(root, file, kind) {
   text = text.slice(bom.length);
   const lines = splitLines(text);
   const doc = {
-    root, file, name, kind, bom, lines,
+    root, file, name, kind, bom, lines, chain, real,
     eol: lines.length > 0 && lines[0].eol !== '' ? lines[0].eol : '\n',
     dev: fstat.dev, ino: fstat.ino, size: fstat.size, mtimeMs: fstat.mtimeMs, mode: fstat.mode,
     fm: null, changed: false,
@@ -308,6 +471,9 @@ function readDoc(root, file, kind) {
 function parseDoc(doc) {
   if (doc.kind === 'task') {
     doc.fm = parseFrontmatter(doc);
+    // Each restricted field is checked before the first edit, also when the script does not read it (P-12).
+    for (const key of RESTRICTED_SCALARS) scalarField(doc, key);
+    listField(doc, 'orbh-sessions');
     return;
   }
   doc.fm = null;
@@ -357,10 +523,12 @@ function removeTemp(temp, made) {
  */
 function writeDoc(doc) {
   if (!doc.changed) return false;
+  assertHeld(doc);
   const now = checkPath(doc.root, doc.file);
-  if (now.dev !== doc.dev || now.ino !== doc.ino || now.size !== doc.size || now.mtimeMs !== doc.mtimeMs) {
+  if (now.real !== doc.real || now.stat.dev !== doc.dev || now.stat.ino !== doc.ino || now.stat.size !== doc.size || now.stat.mtimeMs !== doc.mtimeMs) {
     throw new TaskError(`${doc.name} changed during the run. It is not written.`);
   }
+  checkChain(doc.root, doc.name, doc.chain);
   const data = Buffer.from(doc.bom + doc.lines.map((line) => line.text + line.eol).join(''), 'utf8');
   const temp = path.join(path.dirname(doc.file), `.${path.basename(doc.file)}.${crypto.randomBytes(8).toString('hex')}.tmp`);
   const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_NOFOLLOW;
@@ -385,15 +553,23 @@ function writeDoc(doc) {
     throw error;
   }
   fs.closeSync(fd);
-  const check = lstatOrNull(temp);
-  if (!check || !check.isFile() || check.dev !== made.dev || check.ino !== made.ino || check.size !== data.length) {
+  try {
+    const check = lstatOrNull(temp);
+    if (!check || !check.isFile() || check.dev !== made.dev || check.ino !== made.ino || check.size !== data.length) {
+      throw new TaskError(`The temporary file of ${doc.name} changed before the replace. It is not written.`);
+    }
+    const target = lstatOrNull(doc.file);
+    if (!target || target.isSymbolicLink() || target.dev !== doc.dev || target.ino !== doc.ino) {
+      throw new TaskError(`${doc.name} changed during the run. It is not written.`);
+    }
+    // The last checks before the rename: the lock (the fence) and each folder from the root to the file (P-05).
+    // Known limit: Node has no openat or renameat, so a very small window stays between this check and the rename,
+    // in which another process can swap a folder of the path.
+    assertHeld(doc);
+    checkChain(doc.root, doc.name, doc.chain);
+  } catch (error) {
     removeTemp(temp, made);
-    throw new TaskError(`The temporary file of ${doc.name} changed before the replace. It is not written.`);
-  }
-  const target = lstatOrNull(doc.file);
-  if (!target || target.isSymbolicLink() || target.dev !== doc.dev || target.ino !== doc.ino) {
-    removeTemp(temp, made);
-    throw new TaskError(`${doc.name} changed during the run. It is not written.`);
+    throw error;
   }
   fs.renameSync(temp, doc.file);
   Object.assign(doc, { dev: made.dev, ino: made.ino, size: made.size, mtimeMs: made.mtimeMs, changed: false });
@@ -404,6 +580,8 @@ function writeDoc(doc) {
 // The strict YAML subset of the frontmatter
 
 const TOP_KEY = /^([A-Za-z_][A-Za-z0-9_-]*):(.*)$/;
+/** The scalar fields that a script reads or writes. Their forms are checked in each task document. */
+const RESTRICTED_SCALARS = ['status', 'completed', 'from'];
 
 function unsupported(doc, index, why) {
   const line = doc.lines[index] ? doc.lines[index].text : '';

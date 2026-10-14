@@ -63,7 +63,16 @@ lib.run('task-close', (argv) => {
 
     // The writes: only after both edits passed.
     lib.writeDoc(doc);
-    const rowAdded = inc ? lib.writeDoc(inc) : false;
+    let rowAdded = false;
+    if (inc) {
+      try {
+        rowAdded = lib.writeDoc(inc);
+      } catch (error) {
+        // The task can be done now. task-confirm also runs on a done task, so a second --with task-confirm adds the row.
+        const state = status === 'done' ? 'is already done' : 'is done';
+        throw new lib.TaskError(`${name} ${state}, but the completion row of ${increment} is not written: ${error.message} Run --with task-confirm again to add the row.`);
+      }
+    }
 
     if (status !== 'done') return `${name} ${status} → done, completed ${date}${note ? `; ${note}` : ''}`;
     if (rowAdded) return `${name} is already done; the missing completion row is added: ${note}`;

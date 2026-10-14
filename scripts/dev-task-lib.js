@@ -114,7 +114,7 @@ function readDoc(file) {
   const text = fs.readFileSync(file, 'utf8');
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
   const lines = text.split(/\r?\n/);
-  if (lines[0].replace(/^﻿/, '').trimEnd() !== '---') throw new TaskError(`${path.basename(file)} has no frontmatter: the first line is not "---".`);
+  if (lines[0].replace(/^\uFEFF/, '').trimEnd() !== '---') throw new TaskError(`${path.basename(file)} has no frontmatter: the first line is not "---".`);
   const close = lines.findIndex((line, index) => index > 0 && line.trimEnd() === '---');
   if (close < 0) throw new TaskError(`${path.basename(file)} has no end of the frontmatter: no second "---" line.`);
   return { file, eol, lines, close, changed: false };
@@ -353,6 +353,7 @@ function pinTask(root, file, session) {
     env: process.env,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 30000,
   });
   if (result.error || result.status !== 0) {
     const reason = result.error ? result.error.message : (result.stderr || result.stdout || `exit ${result.status}`).trim().split('\n')[0];

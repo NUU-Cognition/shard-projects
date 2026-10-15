@@ -20,7 +20,7 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 - To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
 - When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
 - Mark each step when it is done: `flint shard step done <step> --evidence "<…>"`. The steps are `setup`, `execute`, `report`, and `complete`. `flint shard step` shows the current step. An invocation opens no Orbh procedure: use `flint shard step`, not `flint orbh procedure step`.
-- The `report` step calls the Reports shard: `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. When the task needs no report, run `flint shard step skip report --reason "<why>"`.
+- The `report` step calls the Reports shard: `flint shard invoke rpt create --headless --input source="(Task) NNN Title"` opens the report as a child of the task. When the task needs no report, run `flint shard step skip report --reason "<why>"`.
 - When no invocation is open, do the edits of each step by hand.
 
 # Input
@@ -97,8 +97,8 @@ If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [
 ## 3. Report
 
 - Make a report when the task asks for one, or when the work found something to keep (a finding, a measurement, or a decision with its reasons). Else skip this step.
-- When `flint shard list` shows `rpt`, use [[wkfl-rpt-create]] of the Reports shard. Give the task as the source of the report. Add the report to `artifacts-created` of the task.
-- With an open invocation, the report runs as a child of the task: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output report="(Report) NNN Title"`. To skip the step, run `flint shard step skip report --reason "<why>"`.
+- When `flint shard list` shows `rpt`, use [[hwkfl-rpt-create]] of the Reports shard (headless: its review is a self-check). Give the task as the source of the report. Add the report to `artifacts-created` of the task.
+- With an open invocation, the report runs as a child of the task: `flint shard invoke rpt create --headless --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output <id> report="(Report) NNN Title"`. To skip the step, run `flint shard step skip report --reason "<why>"`.
 - Then proceed to step 4
 
 ## 4. Complete

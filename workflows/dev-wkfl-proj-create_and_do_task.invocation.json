@@ -25,7 +25,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 1: Task Creation",
-      "next": "Create the task. Then set the input: flint shard invocations set-input task=\"(Task) NNN Title\"."
+      "next": "Create the task. Then set the input: flint shard invocations set-input {{invocation}} task=\"(Task) NNN Title\"."
     },
     {
       "id": "work",
@@ -41,7 +41,7 @@
       "by": "agent",
       "evidence": "optional",
       "stage": "Stage 3: Report",
-      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output report=\"(Report) NNN Title\". Else skip this step: flint shard step skip report --reason \"<why>\".",
+      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output {{invocation}} report=\"(Report) NNN Title\". Else skip this step: flint shard step skip report --reason \"<why>\".",
       "calls": [
         {
           "shard": "rpt",
@@ -66,7 +66,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 5: Close",
-      "next": "When the person confirms, run flint shard proj task-close \"{{task}}\". When the session ends with the task, use flint orbh close --with task-confirm instead."
+      "next": "After --skip-review, set {{task}} to review first. When the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
     }
   ],
   "behaviours": [

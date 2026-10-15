@@ -16,13 +16,13 @@ Create a task and immediately execute it in a single workflow. This is an **exec
 You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The stages below do not change.
 
 - Start the workflow with `flint shard invoke proj create_and_do_task`. The task does not exist yet, so give no task input.
-- After Stage 1, set the task input: `flint shard invocations set-input task="(Task) NNN Title"`. Use the title after the rename. The close behaviours find the task through this input.
+- After Stage 1, set the task input: `flint shard invocations set-input <id> task="(Task) NNN Title"`. The hint after each write prints the command with the id of the invocation. Use the title after the rename. The close behaviours find the task through this input.
 - At Stage 5: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 5: `done`, `completed`, the Task Log line, and the increment log line.
 - Pass `--with task-confirm` only when the person asks for it in the current message.
 - To stop the work for now, close or return with `--with task-defer="<reason>"`. The script `task-defer` sets `deferred` and logs the reason.
 - Mark each step when it is done: `flint shard step done <step> --evidence "<…>"`. The steps are `create`, `work`, `report`, `review`, and `close`. `flint shard step` shows the current step. An invocation opens no Orbh procedure: use `flint shard step`, not `flint orbh procedure step`.
 - The `report` step calls the Reports shard. `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. When the task needs no report, run `flint shard step skip report --reason "<why>"`.
-- Inside another open frame (for example a notepad), the task is a child frame, and the session continues after the task. Then do not close the session. At Stage 5, when the person confirms, run `flint shard proj task-close "(Task) NNN Title"`, mark the `close` step done, and close the invocation: `flint shard invocations close <id> --outcome done`. The parent frame is then the current frame again.
+- Inside another open frame (for example a notepad), the task is a child frame, and the session continues after the task. Then do not close the session. At Stage 5, the task must be in `review` (also after `--skip-review`). When the person confirms, run `flint shard proj task-close "(Task) NNN Title"`, mark the `close` step done, and close the invocation: `flint shard invocations close <id> --outcome done`. The parent frame is then the current frame again.
 - When no invocation is open, do the edits of each stage by hand.
 
 # Input
@@ -83,12 +83,12 @@ If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [
 
 - Make a report when the task asks for one, or when the work found something to keep (a finding, a measurement, or a decision with its reasons). Else skip this stage.
 - When `flint shard list` shows `rpt`, use [[wkfl-rpt-create]] of the Reports shard. Give the task as the source of the report. Add the report to `artifacts-created` of the task.
-- With an open invocation, the report runs as a child of the task. The `report` step gives the command: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output report="(Report) NNN Title"`. To skip the stage, run `flint shard step skip report --reason "<why>"`.
+- With an open invocation, the report runs as a child of the task. The `report` step gives the command: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output <id> report="(Report) NNN Title"`. To skip the stage, run `flint shard step skip report --reason "<why>"`.
 - Then proceed to Stage 4
 
 ## Stage 4: Task Review
 
-*If `--skip-review` was passed, skip this stage and proceed directly to Stage 5. With an open invocation, run `flint shard step skip review --reason "--skip-review"`.*
+*If `--skip-review` was passed, set status to `review` (the first action of this stage), skip the rest of this stage, and proceed directly to Stage 5. With an open invocation, run `flint shard step skip review --reason "--skip-review"`. The task must be in `review` before the close: `task-close` accepts only `review`, `reviewed`, or `done`.*
 
 - Set status to `review`
 - Update the task file with final progress

@@ -69,7 +69,7 @@ If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [
 
 - Make a report when the task asks for one, or when the work found something to keep (a finding, a measurement, or a decision with its reasons). Else skip this stage.
 - When `flint shard list` shows `rpt`, use [[wkfl-rpt-create]] of the Reports shard. Give the task as the source of the report. Add the report to `artifacts-created` of the task.
-- With an open invocation, the report runs as a child of the task. The `report` step gives the command: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output report="(Report) NNN Title"`. To skip the stage, run `flint shard step skip report --reason "<why>"`.
+- With an open invocation, the report runs as a child of the task. The `report` step gives the command: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output <id> report="(Report) NNN Title"`. To skip the stage, run `flint shard step skip report --reason "<why>"`.
 - Then proceed to Stage 3
 
 ## Stage 3: Task Review

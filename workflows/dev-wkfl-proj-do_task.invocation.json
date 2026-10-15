@@ -33,7 +33,7 @@
       "by": "agent",
       "evidence": "optional",
       "stage": "Stage 2: Report",
-      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output report=\"(Report) NNN Title\". Else skip this step: flint shard step skip report --reason \"<why>\".",
+      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output {{invocation}} report=\"(Report) NNN Title\". Else skip this step: flint shard step skip report --reason \"<why>\".",
       "calls": [
         {
           "shard": "rpt",
@@ -58,7 +58,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 4: Close",
-      "next": "When the person confirms, run flint shard proj task-close \"{{task}}\". When the session ends with the task, use flint orbh close --with task-confirm instead."
+      "next": "When the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
     }
   ],
   "behaviours": [

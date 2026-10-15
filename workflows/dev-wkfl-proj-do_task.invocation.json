@@ -1,5 +1,5 @@
 {
-  "format": "shard-invocation/0.1",
+  "format": "shard-invocation/0.2",
   "workflow": "wkfl-proj-do_task",
   "title": "Do Task",
   "inputs": {
@@ -10,10 +10,56 @@
       "description": "The title of the task, for example \"(Task) 743 Shard Invocations\"."
     }
   },
+  "outputs": {
+    "report": {
+      "kind": "artifact",
+      "type": "Report",
+      "required": false,
+      "description": "The report that the task made, for example \"(Report) 031 Title\". Set it in the report step."
+    }
+  },
   "steps": [
-    { "id": "work", "title": "Task Work", "by": "agent", "evidence": "required" },
-    { "id": "review", "title": "Task Review", "by": "agent", "evidence": "required" },
-    { "id": "close", "title": "Close", "by": "agent", "evidence": "required" }
+    {
+      "id": "work",
+      "title": "Task Work",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 1: Task Work",
+      "next": "Implement {{task}}: tick each checkbox, write the Task Log, and commit the WIP of each repo in git-repos."
+    },
+    {
+      "id": "report",
+      "title": "Report",
+      "by": "agent",
+      "evidence": "optional",
+      "stage": "Stage 2: Report",
+      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output report=\"(Report) NNN Title\". Else skip this step: flint shard step skip report --reason \"<why>\".",
+      "calls": [
+        {
+          "shard": "rpt",
+          "workflow": "create",
+          "inputs": {
+            "source": "{{task}}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "title": "Task Review",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 3: Task Review",
+      "next": "Set {{task}} to review, give the person a summary, and refine it until the person confirms."
+    },
+    {
+      "id": "close",
+      "title": "Close",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 4: Close",
+      "next": "When the person confirms, run flint shard proj task-close \"{{task}}\". When the session ends with the task, use flint orbh close --with task-confirm instead."
+    }
   ],
   "behaviours": [
     {

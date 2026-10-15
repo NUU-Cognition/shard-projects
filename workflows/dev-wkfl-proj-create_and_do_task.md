@@ -17,16 +17,19 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 
 - Start the workflow with `flint shard invoke proj create_and_do_task`. The task does not exist yet, so give no task input.
 - After Stage 1, set the task input: `flint shard invocations set-input task="(Task) NNN Title"`. Use the title after the rename. The close behaviours find the task through this input.
-- At Stage 4: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 4: `done`, `completed`, the Task Log line, and the increment log line.
+- At Stage 5: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 5: `done`, `completed`, the Task Log line, and the increment log line.
 - Pass `--with task-confirm` only when the person asks for it in the current message.
 - To stop the work for now, close or return with `--with task-defer="<reason>"`. The script `task-defer` sets `deferred` and logs the reason.
+- Mark each step when it is done: `flint shard step done <step> --evidence "<…>"`. The steps are `create`, `work`, `report`, `review`, and `close`. `flint shard step` shows the current step. An invocation opens no Orbh procedure: use `flint shard step`, not `flint orbh procedure step`.
+- The `report` step calls the Reports shard. `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. When the task needs no report, run `flint shard step skip report --reason "<why>"`.
+- Inside another open frame (for example a notepad), the task is a child frame, and the session continues after the task. Then do not close the session. At Stage 5, when the person confirms, run `flint shard proj task-close "(Task) NNN Title"`, mark the `close` step done, and close the invocation: `flint shard invocations close <id> --outcome done`. The parent frame is then the current frame again.
 - When no invocation is open, do the edits of each stage by hand.
 
 # Input
 
 - Context of a task
 - (Optional) Aiding prompts and instructions on how to complete the task
-- (Optional) `--skip-review` — skip Stage 3 and go straight from work to close
+- (Optional) `--skip-review` — skip Stage 4 (Task Review) and go straight from the report to close
 
 # Actions
 
@@ -76,17 +79,24 @@ If there is no `git-repos` field, skip this step.
 
 If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [[sk-ite-check_after_task]] after the WIP commits. The skill first emits the event `task.finished` with the changed files, so that the agent of each program keeps its map true. When no standing process of a program takes the event, the skill checks the parts and the views of that program itself. The skill is an aid: it never blocks the review or the close of the task. When the commits are on a worktree branch that is not landed, write `ITE: run sk-ite-check_after_task after the landing` in the Task Log and in the result.
 
-## Stage 3: Task Review
+## Stage 3: Report
 
-*If `--skip-review` was passed, skip this stage and proceed directly to Stage 4.*
+- Make a report when the task asks for one, or when the work found something to keep (a finding, a measurement, or a decision with its reasons). Else skip this stage.
+- When `flint shard list` shows `rpt`, use [[wkfl-rpt-create]] of the Reports shard. Give the task as the source of the report. Add the report to `artifacts-created` of the task.
+- With an open invocation, the report runs as a child of the task. The `report` step gives the command: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output report="(Report) NNN Title"`. To skip the stage, run `flint shard step skip report --reason "<why>"`.
+- Then proceed to Stage 4
+
+## Stage 4: Task Review
+
+*If `--skip-review` was passed, skip this stage and proceed directly to Stage 5. With an open invocation, run `flint shard step skip review --reason "--skip-review"`.*
 
 - Set status to `review`
 - Update the task file with final progress
 - Provide the user with a completion summary
 - Converse to refine — if the user requests changes, capture them in the task and execute them
-- Once the user confirms, proceed to Stage 4
+- Once the user confirms, proceed to Stage 5
 
-## Stage 4: Close
+## Stage 5: Close
 
 - Set status to `done`
 - Set the `completed` date (ISO 8601)

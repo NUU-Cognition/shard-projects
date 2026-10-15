@@ -16,9 +16,11 @@ Execute an existing task autonomously to completion via Orbh. No interactive sta
 You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The steps below do not change.
 
 - Start the workflow with `flint shard invoke proj do_task --headless --input task="(Task) NNN Title"`. When the task is `todo`, the behaviour `task-open` sets `in-progress`, adds the session to `orbh-sessions`, and pins the task. Then these edits of step 1 are done.
-- Never pass `--with task-confirm`. Only a person confirms a task. After step 3 the task stays in `review`.
+- Never pass `--with task-confirm`. Only a person confirms a task. After step 4 the task stays in `review`.
 - To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
 - When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
+- Mark each step when it is done: `flint shard step done <step> --evidence "<…>"`. The steps are `setup`, `execute`, `report`, and `complete`. `flint shard step` shows the current step. An invocation opens no Orbh procedure: use `flint shard step`, not `flint orbh procedure step`.
+- The `report` step calls the Reports shard: `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. When the task needs no report, run `flint shard step skip report --reason "<why>"`.
 - When no invocation is open, do the edits of each step by hand.
 
 # Input
@@ -92,7 +94,14 @@ If there is no `git-repos` field, skip this step.
 
 If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [[sk-ite-check_after_task]] after the WIP commits. The skill first emits the event `task.finished` with the changed files, so that the agent of each program keeps its map true. When no standing process of a program takes the event, the skill checks the parts and the views of that program itself. The skill is an aid: it never blocks the review or the close of the task. When the commits are on a worktree branch that is not landed, write `ITE: run sk-ite-check_after_task after the landing` in the Task Log and in the result.
 
-## 3. Complete
+## 3. Report
+
+- Make a report when the task asks for one, or when the work found something to keep (a finding, a measurement, or a decision with its reasons). Else skip this step.
+- When `flint shard list` shows `rpt`, use [[wkfl-rpt-create]] of the Reports shard. Give the task as the source of the report. Add the report to `artifacts-created` of the task.
+- With an open invocation, the report runs as a child of the task: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output report="(Report) NNN Title"`. To skip the step, run `flint shard step skip report --reason "<why>"`.
+- Then proceed to step 4
+
+## 4. Complete
 
 - Verify all requirement and definition-of-done checkboxes are ticked
 - Set task status to `review`

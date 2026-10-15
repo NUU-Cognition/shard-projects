@@ -1,5 +1,5 @@
 {
-  "format": "shard-invocation/0.1",
+  "format": "shard-invocation/0.2",
   "workflow": "hwkfl-proj-create_and_do_task",
   "title": "Headless Create and Do Task",
   "inputs": {
@@ -10,24 +10,55 @@
       "description": "The title of the task. The task does not exist at invoke time: set it after step 1 with flint shard invocations set-input task=\"(Task) NNN Title\"."
     }
   },
+  "outputs": {
+    "report": {
+      "kind": "artifact",
+      "type": "Report",
+      "required": false,
+      "description": "The report that the task made, for example \"(Report) 031 Title\". Set it in the report step."
+    }
+  },
   "steps": [
     {
       "id": "create",
       "title": "Create",
       "by": "agent",
-      "evidence": "required"
+      "evidence": "required",
+      "stage": "1. Create",
+      "next": "Create the task. Then set the input: flint shard invocations set-input task=\"(Task) NNN Title\"."
     },
     {
       "id": "execute",
       "title": "Execute",
       "by": "agent",
-      "evidence": "required"
+      "evidence": "required",
+      "stage": "2. Execute",
+      "next": "Implement {{task}}: tick each checkbox, write the Task Log, and commit the WIP of each repo in git-repos."
+    },
+    {
+      "id": "report",
+      "title": "Report",
+      "by": "agent",
+      "evidence": "optional",
+      "stage": "3. Report",
+      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output report=\"(Report) NNN Title\". Else skip this step: flint shard step skip report --reason \"<why>\".",
+      "calls": [
+        {
+          "shard": "rpt",
+          "workflow": "create",
+          "inputs": {
+            "source": "{{task}}"
+          }
+        }
+      ]
     },
     {
       "id": "complete",
       "title": "Complete",
       "by": "agent",
-      "evidence": "required"
+      "evidence": "required",
+      "stage": "4. Complete",
+      "next": "Set {{task}} to review, write the last Task Log line, and return the result. Never pass --with task-confirm."
     }
   ],
   "behaviours": [

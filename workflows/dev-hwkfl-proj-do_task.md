@@ -20,6 +20,7 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 - To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
 - When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
 - Mark each step when it is done: `flint shard step done <step> --evidence "<…>"`. The steps are `setup`, `execute`, `report`, and `complete`. `flint shard step` shows the current step. An invocation opens no Orbh procedure: use `flint shard step`, not `flint orbh procedure step`.
+- Outside an Orbh session (no `ORBH_SESSION_ID`), give `--invocation <id>` to `flint shard step`, for example `flint shard step done <step> --invocation <id> --evidence "<…>"`. The hint after each write prints the id.
 - The `report` step calls the Reports shard: `flint shard invoke rpt create --headless --input source="(Task) NNN Title"` opens the report as a child of the task. When the task needs no report, run `flint shard step skip report --reason "<why>"`.
 - When no invocation is open, do the edits of each step by hand.
 

@@ -25,7 +25,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "1. Create",
-      "next": "Create the task. Then set the input: flint shard invocations set-input {{invocation}} task=\"(Task) NNN Title\"."
+      "next": "Create the task. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'."
     },
     {
       "id": "execute",
@@ -41,7 +41,7 @@
       "by": "agent",
       "evidence": "optional",
       "stage": "3. Report",
-      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output {{invocation}} report=\"(Report) NNN Title\". Else skip this step: flint shard step skip report --reason \"<why>\".",
+      "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output {{invocation}} report='(Report) NNN Title'. Else skip this step: flint shard step skip report --reason '<why>'.",
       "calls": [
         {
           "shard": "rpt",

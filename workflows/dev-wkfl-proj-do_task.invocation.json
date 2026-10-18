@@ -9,12 +9,16 @@
       "required": true,
       "description": "The title of the task, for example \"(Task) 743 Shard Invocations\".",
       "ready": {
-        "status": { "not": ["done", "deprecated", "superseded"] }
+        "status": { "not": ["done", "deprecated", "superseded", "reviewing"] }
       },
       "make-ready": [
         {
           "from": { "status": ["done"] },
           "say": "{{task}} is done. For more work, make a new task that continues it with sk-proj-supersede_task."
+        },
+        {
+          "from": { "status": ["reviewing"] },
+          "say": "{{task}} is reviewing: a review runs now. Wait for it to end, or ask the person."
         },
         {
           "from": { "status": ["deprecated", "superseded"] },
@@ -76,9 +80,10 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 3: Task Review",
+      "done-when": { "task.status": ["reviewed", "done"] },
       "next": {
-        "interactive": "Set {{task}} to review, give the person a summary, and refine it until the person confirms.",
-        "headless": "Check each checkbox of {{task}}, set it to review, and write the last Task Log line. Mark this step done, and close the invocation: flint shard invocations close {{invocation}} --outcome done. Put the review_task command of the close in the result, and return with flint orbh session return --finish. Never pass --with task-confirm."
+        "interactive": "Set {{task}} to review (never back from reviewing or reviewed), and give the person a summary. When the invocation goes toward proj review_task, do not ask for the confirm: mark this step done, and skip the step close. Else refine the task until the person confirms.",
+        "headless": "Check each checkbox of {{task}}, set it to review (never back from reviewing or reviewed), and write the last Task Log line. Mark this step done, and close the invocation: flint shard invocations close {{invocation}} --outcome done. Put the review_task command of the close in the result, and return with flint orbh session return --finish. Never pass --with task-confirm."
       }
     },
     {
@@ -88,7 +93,7 @@
       "evidence": "required",
       "stage": "Stage 4: Close",
       "modes": ["interactive"],
-      "next": "When the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
+      "next": "When the invocation goes toward proj review_task, skip this step: flint shard step skip close --invocation {{invocation}} --reason 'toward review_task'. Then close the invocation: flint shard invocations close {{invocation}} --outcome done. The close prints the review_task command. Else, when the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
     }
   ],
   "behaviours": [

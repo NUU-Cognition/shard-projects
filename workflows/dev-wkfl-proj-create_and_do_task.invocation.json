@@ -9,12 +9,16 @@
       "required": false,
       "description": "The title of the task. The task does not exist at invoke time: set it after Stage 1 with flint shard invocations set-input task=\"(Task) NNN Title\".",
       "ready": {
-        "status": { "not": ["done", "deprecated", "superseded"] }
+        "status": { "not": ["done", "deprecated", "superseded", "reviewing"] }
       },
       "make-ready": [
         {
           "from": { "status": ["done"] },
           "say": "{{task}} is done. For more work, make a new task that continues it with sk-proj-supersede_task."
+        },
+        {
+          "from": { "status": ["reviewing"] },
+          "say": "{{task}} is reviewing: a review runs now. Wait for it to end, or ask the person."
         },
         {
           "from": { "status": ["deprecated", "superseded"] },
@@ -46,7 +50,6 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 1: Task Creation",
-      "done-when": { "task.status": "set" },
       "next": {
         "interactive": "Create the task. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'.",
         "headless": "Create the task, set the phase creating-task, and track the task with flint orbh artifact. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'."
@@ -88,9 +91,10 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 4: Task Review",
+      "done-when": { "task.status": ["reviewed", "done"] },
       "next": {
-        "interactive": "Set {{task}} to review, give the person a summary, and refine it until the person confirms.",
-        "headless": "Check each checkbox of {{task}}, set it to review, and write the last Task Log line. Mark this step done, and close the invocation: flint shard invocations close {{invocation}} --outcome done. Put the review_task command of the close in the result, and return with flint orbh session return --finish. Never pass --with task-confirm."
+        "interactive": "Set {{task}} to review (never back from reviewing or reviewed), and give the person a summary. When the invocation goes toward proj review_task, do not ask for the confirm: mark this step done, and skip the step close. Else refine the task until the person confirms.",
+        "headless": "Check each checkbox of {{task}}, set it to review (never back from reviewing or reviewed), and write the last Task Log line. Mark this step done, and close the invocation: flint shard invocations close {{invocation}} --outcome done. Put the review_task command of the close in the result, and return with flint orbh session return --finish. Never pass --with task-confirm."
       }
     },
     {
@@ -100,7 +104,7 @@
       "evidence": "required",
       "stage": "Stage 5: Close",
       "modes": ["interactive"],
-      "next": "After --skip-review, set {{task}} to review first. When the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
+      "next": "When the invocation goes toward proj review_task, skip this step: flint shard step skip close --invocation {{invocation}} --reason 'toward review_task'. Then close the invocation: flint shard invocations close {{invocation}} --outcome done. The close prints the review_task command. Else, after --skip-review, set {{task}} to review first. When the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
     }
   ],
   "behaviours": [

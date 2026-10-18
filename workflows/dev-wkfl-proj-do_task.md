@@ -1,6 +1,7 @@
 ---
 orbh-sessions:
   - "[[87347e6b-2363-4434-9a98-f1d641049fa7]]"
+  - "[[f562483c-6afe-404a-98eb-a049503a241e]]"
 ---
 
 > [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
@@ -11,11 +12,19 @@ This workflow belongs to the Projects shard. Ensure you have @init-proj.md in co
 
 Execute an existing task through to completion. This is an **execution** workflow — the task already has a specification, and this workflow works it to done.
 
+> [!headless]
+> In a headless or subagent Orbh session, no person is at the terminal. Do each stage, and follow the `> [!headless]` callout in it. Do not wait for a person.
+> - Report progress with the session keys: `flint orbh session set phase <phase>` and `flint orbh session set progress "<done>/<total> requirements"`. The phase values are in the section `# Headless` of [[dev-init-proj]].
+> - Track each artifact that you create or change: `flint orbh artifact "<path of the artifact>"`.
+> - Never pass `--with task-confirm`. Only a person confirms a task. At the end, the task stays in `review`.
+> - End the turn with `flint orbh session return --finish "<result>"`.
+
 # Invocation
 
 You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The stages below do not change.
 
 - Start the workflow with `flint shard invoke proj do_task --input task="(Task) NNN Title"`. When the task is `todo`, the behaviour `task-open` sets `in-progress`, adds the session to `orbh-sessions`, and pins the task. Then these edits of Stage 1 are done.
+- The mode comes from the Orbh session. A headless or subagent session runs in the headless mode and follows the `> [!headless]` callouts. In the headless mode, the invocation skips the step `close` at the open, because only a person confirms a task. `flint shard step` shows the step that the mode skipped.
 - At Stage 4: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 4: `done`, `completed`, the Task Log line, and the increment log line.
 - Pass `--with task-confirm` only when the person asks for it in the current message.
 - To stop the work for now, close or return with `--with task-defer="<reason>"`. The script `task-defer` sets `deferred` and logs the reason.
@@ -24,6 +33,10 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 - The `report` step calls the Reports shard. `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. When the task needs no report, run `flint shard step skip report --reason "<why>"`.
 - Inside another open frame (for example a notepad), the task is a child frame, and the session continues after the task. Then do not close the session. At Stage 4, when the person confirms, run `flint shard proj task-close "(Task) NNN Title"`, mark the `close` step done, and close the invocation: `flint shard invocations close <id> --outcome done`. The parent frame is then the current frame again.
 - When no invocation is open, do the edits of each stage by hand.
+
+> [!headless]
+> - To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
+> - When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
 
 # Input
 
@@ -49,6 +62,13 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 - If blocked on a human decision or external dependency, set status to `blocked`, log the reason, and present the blocker to the user. When resolved, return to `in-progress` and continue.
 - Once all work is complete, commit if needed (see below) and proceed to Stage 2
 
+> [!headless]
+> - Read the task fully: the frontmatter, the context, the requirements, the definition of done, the Task Log, and the notes.
+> - At the start, set `flint orbh session set phase reading-task` and `flint orbh session set progress "0/<N> requirements"`. While you implement, set `phase implementing`, and update `progress` after each requirement.
+> - Refinement pass: when the Task Log has entries of earlier sessions, read what they did, and continue from that point. Do not start again.
+> - Track each artifact that you create or change: `flint orbh artifact "<path of the artifact>"`.
+> - When you are blocked, there is no person to tell. Log the blocker in the Task Log, set the task to `blocked`, set `phase blocked`, and use a deferred request: `flint orbh request "$ORBH_SESSION_ID" "<the question that you need answered>"`. When the session resumes with the answer, continue. A subagent session asks no person: it returns the blocker and the question to its dispatcher.
+
 ### Committing Repo Work
 
 If the task has a `git-repos` field, you must commit your changes as WIP commits before moving to review. See [[dev-knw-proj-wip_commits]] for the full convention. In short, for each repo in `git-repos`:
@@ -73,6 +93,9 @@ If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [
 - With an open invocation, the report runs as a child of the task. The `report` step gives the command: `flint shard invoke rpt create --input source="(Task) NNN Title"`. When the report is closed, set the output of the task: `flint shard invocations set-output <id> report="(Report) NNN Title"`. To skip the stage, run `flint shard step skip report --reason "<why>"`.
 - Then proceed to Stage 3
 
+> [!headless]
+> The report runs in the headless mode too, with the same command: follow the `> [!headless]` callouts of [[wkfl-rpt-create]]. Its review is a self-check, and no step waits for a person.
+
 ## Stage 3: Task Review
 
 - Set status to `review`
@@ -81,13 +104,28 @@ If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [
 - Converse to refine — if the user requests changes, capture them in the task and execute them
 - Once the user confirms, proceed to Stage 4
 
+> [!headless]
+> Do not wait for a person, and do not do Stage 4.
+> - Make sure that each requirement and definition-of-done checkbox is ticked.
+> - Set the status to `review`, and add a last Task Log entry that sums up the work.
+> - Write the summary into the result, not to a person. Set `flint orbh session set phase complete`. Mark the step `review` done, then return: `flint orbh session return --finish "Completed task (Task) NNN. <summary of the work>. Moved to review."`
+> - Never pass `--with task-confirm`.
+
 ## Stage 4: Close
 
 - Set status to `done`
 - Set the `completed` date (ISO 8601)
 - If the task has a `from` that points to an increment, update that increment's log with a completion entry
 
+> [!headless]
+> A headless session does not do this stage. Only a person confirms a task. The invocation skips the step `close` at the open.
+
 # Output
 
 - Completed task in `done` status
 - Increment log updated (if `from` points to an increment)
+
+> [!headless]
+> - The task is in `review`, with all checkboxes ticked
+> - The Task Log has the progress of the session
+> - The Orbh result has the summary of the work

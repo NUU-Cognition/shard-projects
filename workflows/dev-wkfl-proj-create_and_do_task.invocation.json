@@ -1,5 +1,5 @@
 {
-  "format": "shard-invocation/0.2",
+  "format": "shard-invocation/0.3",
   "workflow": "wkfl-proj-create_and_do_task",
   "title": "Create and Do Task",
   "inputs": {
@@ -25,7 +25,10 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 1: Task Creation",
-      "next": "Create the task. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'."
+      "next": {
+        "interactive": "Create the task. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'.",
+        "headless": "Create the task, set the phase creating-task, and track the task with flint orbh artifact. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'."
+      }
     },
     {
       "id": "work",
@@ -33,7 +36,10 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 2: Task Work",
-      "next": "Implement {{task}}: tick each checkbox, write the Task Log, and commit the WIP of each repo in git-repos."
+      "next": {
+        "interactive": "Implement {{task}}: tick each checkbox, write the Task Log, and commit the WIP of each repo in git-repos.",
+        "headless": "Implement {{task}}: tick each checkbox, write the Task Log, commit the WIP of each repo in git-repos, and keep the phase and the progress of the session current. When blocked, use a deferred request."
+      }
     },
     {
       "id": "report",
@@ -58,7 +64,10 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 4: Task Review",
-      "next": "Set {{task}} to review, give the person a summary, and refine it until the person confirms."
+      "next": {
+        "interactive": "Set {{task}} to review, give the person a summary, and refine it until the person confirms.",
+        "headless": "Check each checkbox of {{task}}, set it to review, and write the last Task Log line. Mark this step done, then return the summary with flint orbh session return --finish. Never pass --with task-confirm."
+      }
     },
     {
       "id": "close",
@@ -66,6 +75,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 5: Close",
+      "modes": ["interactive"],
       "next": "After --skip-review, set {{task}} to review first. When the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
     }
   ],

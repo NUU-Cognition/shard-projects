@@ -178,11 +178,112 @@ The workflows Do Task and Create and Do Task have an invocation file (`wkfl-proj
 - `--no-behaviours` on the verb runs no behaviour. The invocation record keeps this choice.
 - The scripts also run by hand: `flint shard proj task-close "(Task) NNN Title"`, and `flint shard proj task-defer "(Task) NNN Title" "<reason>"`.
 - With no invocation, the workflows work as before: the agent does the edits by hand.
-- The invocation files have the format `shard-invocation/0.2`. The record owns the steps: mark each one with `flint shard step done <step> --evidence "<…>"` or `flint shard step skip <step> --reason "<why>"`, in order. After each write, the CLI prints `now:`, `next:`, and `part of:`. Each step names its stage in the workflow, so the agent reads only that stage again after a compaction.
-- The `report` step (after the work) calls the Reports shard: `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. A headless task uses `flint shard invoke rpt create --headless`: the headless report has no person gate. The task has the output `report` (optional): `flint shard invocations set-output <id> report="(Report) NNN Title"`. A task with no report skips the step with a reason.
+- The invocation files have the format `shard-invocation/0.3`. The record owns the steps: mark each one with `flint shard step done <step> --evidence "<…>"` or `flint shard step skip <step> --reason "<why>"`, in order. After each write, the CLI prints `now:`, `next:`, and `part of:`. Each step names its stage in the workflow, so the agent reads only that stage again after a compaction.
+- The `report` step (after the work) calls the Reports shard: `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. In a headless session, the report runs in the headless mode too, with the same command: its review is a self-check, with no person gate. The task has the output `report` (optional): `flint shard invocations set-output <id> report="(Report) NNN Title"`. A task with no report skips the step with a reason.
 - Inside a notepad (`flint shard invoke ntpd start`), a task opens as a child of the notepad, and the session continues after the task. Then the close of the task is `flint shard proj task-close "(Task) NNN Title"` (after the person confirms) and `flint shard invocations close <id> --outcome done`, not a session close.
-- The headless workflows have invocation files with the same behaviours. With `--headless`, invoke reads the headless file (`hwkfl-proj-<name>.invocation.json`). Start them with `flint shard invoke proj do_task --headless --input task="(Task) NNN Title"` or `flint shard invoke proj create_and_do_task --headless`. In a headless workflow, the agent never passes `--with task-confirm`. It may pass `--with task-defer="<reason>"` on `flint orbh session return`.
+- One workflow file serves both modes. The mode comes from the Orbh session: a headless or subagent session runs in the headless mode, and an interactive session (or no session) runs in the interactive mode. A headless session follows the `> [!headless]` callouts of the workflow, and the invocation skips each step that is only for a person at the open (the step `close`, with `"modes": ["interactive"]`). `flint shard step` shows the step that the mode skipped. In the headless mode, the agent never passes `--with task-confirm`. It may pass `--with task-defer="<reason>"` on `flint orbh session return`.
 - The scripts edit only a strict subset of the YAML frontmatter (unquoted keys at column 0; one-line values for `status`, `completed`, and `from`; a block list, an empty value, or a one-line flow list for `orbh-sessions`). They refuse every other form before any write, with the line that is not supported. Then edit the file by hand.
+
+# Headless
+
+A headless or subagent Orbh session has no person at the terminal. It loads this init with `flint shard start proj`, as an interactive session does. The task lifecycle, the `from` field, the WIP commits, and the checkbox tracking do not change. Each workflow has `> [!headless]` callouts in the stages that differ: follow them. Skills (`sk-proj-*`) do not change: they have no person gate.
+
+## Interaction Model
+
+| Interactive | Headless |
+|-------------|----------|
+| "Present findings to the user" | Set the interface keys, so that the Plate can show them |
+| "Converse to refine" | Go on alone; ask with a deferred request only when you are stuck |
+| "Once the user confirms" | Skip: there is no confirmation step |
+| Status `blocked` and wait | `flint orbh request "$ORBH_SESSION_ID" "<question>"` (deferred): the session resumes with the answer. A subagent returns the blocker to its dispatcher |
+| Print a completion summary | `flint orbh session return --finish "<result>"`: the result is stored on the session |
+
+## Orbh Interface Keys
+
+Report progress with `flint orbh session set <key> <value>`. The Plate and `flint orbh watch` read these keys. Set them each time, so that the person can follow the work without the transcript.
+
+| Key | Type | Description | When to update |
+|-----|------|-------------|----------------|
+| `phase` | string | The current phase of the work | At each change of phase |
+| `task` | string | The task that you work on (the file name) | One time, at the start |
+| `progress` | string | A short progress indicator | After each meaningful step |
+
+### Phase Values
+
+**Do Task, Create and Do Task:**
+
+| Phase | Meaning |
+|-------|---------|
+| `reading-task` | Reading the task and understanding it |
+| `creating-task` | Writing the task spec (Create and Do Task only) |
+| `implementing` | Working on the requirements |
+| `blocked` | Waiting for a human answer to a deferred request |
+| `deferred` | The task is shelved on purpose: the session ends cleanly |
+| `complete` | All work is done: the result is returned |
+
+**Review Task:**
+
+| Phase | Meaning |
+|-------|---------|
+| `verifying` | Checking each checkbox against reality |
+| `resolving` | Fixing the issues that the verification found |
+| `blocked` | A verification issue needs a human decision |
+| `complete` | The review is done, and the task is `reviewed` (a person moves it to `done`) |
+
+**Create Task (fill a stub):**
+
+| Phase | Meaning |
+|-------|---------|
+| `reading-stub` | Reading the stub that the Plate made |
+| `writing-spec` | Writing the full task spec |
+| `blocked` | The scope is not clear: a deferred request is sent |
+| `complete` | The spec is written: ready for review or execution |
+
+### Progress Format
+
+Keep `progress` short and easy to scan:
+
+```
+"0/5 requirements"          — checkbox progress
+"3/5 requirements"          — during the work
+"5/5 requirements"          — all done
+"verifying 2/7 checkboxes"  — during a review
+"fixing 1 failed item"      — during the resolve
+```
+
+### Example Session Interface
+
+A Do Task session, seen from the outside:
+
+```
+phase:    "reading-task"
+task:     "(Task) 341 Pre-Pass Title and Description on Session Launch"
+progress: "0/4 requirements"
+
+→ phase changes to "implementing"
+→ progress updates: "1/4 requirements", "2/4 requirements", ...
+
+phase:    "complete"
+progress: "4/4 requirements"
+```
+
+## Artifact Tracking
+
+When you create or change a Mesh artifact, track it, so that the Plate can show it:
+
+```bash
+flint orbh artifact "Mesh/Types/Tasks/(Task) 341 Pre-Pass Title and Description on Session Launch.md"
+```
+
+## Result Delivery
+
+Each headless workflow **must** end with `flint orbh session return --finish "<result>"`. The result is the main output of the session: the person and the Plate read it. Keep it short:
+
+```bash
+flint orbh session return --finish "Completed task (Task) 341. Implemented all 4 requirements: <short list>. Moved to review."
+```
+
+An exit with no return is prompted again, and then marked `failed-unreturned`. The person then has no result to read.
 
 # Dashboards
 

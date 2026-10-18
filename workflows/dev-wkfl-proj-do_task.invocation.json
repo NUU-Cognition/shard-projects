@@ -1,5 +1,5 @@
 {
-  "format": "shard-invocation/0.2",
+  "format": "shard-invocation/0.3",
   "workflow": "wkfl-proj-do_task",
   "title": "Do Task",
   "inputs": {
@@ -25,7 +25,10 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 1: Task Work",
-      "next": "Implement {{task}}: tick each checkbox, write the Task Log, and commit the WIP of each repo in git-repos."
+      "next": {
+        "interactive": "Implement {{task}}: tick each checkbox, write the Task Log, and commit the WIP of each repo in git-repos.",
+        "headless": "Read {{task}} fully and implement it: tick each checkbox, write the Task Log, commit the WIP of each repo in git-repos, and keep the phase and the progress of the session current. When blocked, use a deferred request."
+      }
     },
     {
       "id": "report",
@@ -50,7 +53,10 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 3: Task Review",
-      "next": "Set {{task}} to review, give the person a summary, and refine it until the person confirms."
+      "next": {
+        "interactive": "Set {{task}} to review, give the person a summary, and refine it until the person confirms.",
+        "headless": "Check each checkbox of {{task}}, set it to review, and write the last Task Log line. Mark this step done, then return the summary with flint orbh session return --finish. Never pass --with task-confirm."
+      }
     },
     {
       "id": "close",
@@ -58,6 +64,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 4: Close",
+      "modes": ["interactive"],
       "next": "When the person confirms, run flint shard proj task-close {{task}}. When the session ends with the task, use flint orbh close --with task-confirm instead."
     }
   ],

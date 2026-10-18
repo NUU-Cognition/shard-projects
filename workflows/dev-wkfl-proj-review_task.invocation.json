@@ -1,0 +1,63 @@
+{
+  "format": "shard-invocation/0.3",
+  "workflow": "wkfl-proj-review_task",
+  "title": "Review Task",
+  "inputs": {
+    "task": {
+      "kind": "artifact",
+      "type": "Task",
+      "required": true,
+      "description": "The task to review, for example \"(Task) 743 Shard Invocations\". It must be in review.",
+      "ready": { "status": ["review"] },
+      "make-ready": [
+        {
+          "from": { "status": ["todo", "in-progress", "blocked", "deferred"] },
+          "invoke": {
+            "shard": "proj",
+            "workflow": "do_task",
+            "inputs": { "task": "{{task}}" }
+          }
+        },
+        {
+          "from": { "status": ["reviewing"] },
+          "say": "{{task}} is reviewing: another review runs now. Wait until it ends. When that review stopped, open this review with the --not-ready command, and say why."
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "id": "verify",
+      "title": "Verify",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 1: Verify",
+      "next": {
+        "interactive": "Set {{task}} to reviewing, verify each checkbox against reality, and give the findings to the person.",
+        "headless": "Set {{task}} to reviewing, set the phase verifying, and verify each checkbox against reality. Keep the findings for the Task Log and the result."
+      }
+    },
+    {
+      "id": "resolve",
+      "title": "Resolve",
+      "by": "agent",
+      "evidence": "optional",
+      "stage": "Stage 2: Resolve",
+      "next": {
+        "interactive": "Fix each failed item that is straightforward, and log it under Review fixes. Flag each other item to the person, until the person confirms.",
+        "headless": "Set the phase resolving. Fix each failed item that is straightforward, and log it under Review fixes. Use a deferred request for a decision that you cannot make."
+      }
+    },
+    {
+      "id": "close",
+      "title": "Close",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 3: Close",
+      "next": {
+        "interactive": "Set {{task}} to reviewed with the completed date, and write the last Task Log entry. Do not set done: a person does that. Then close the invocation: flint shard invocations close {{invocation}} --outcome done.",
+        "headless": "Set {{task}} to reviewed with the completed date, and write the last Task Log entry. Do not set done: a person does that. Close the invocation: flint shard invocations close {{invocation}} --outcome done. Then return with flint orbh session return --finish."
+      }
+    }
+  ]
+}

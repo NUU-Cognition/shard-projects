@@ -25,6 +25,11 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 
 - Start the workflow with `flint shard invoke proj do_task --input task="(Task) NNN Title"`. When the task is `todo`, the behaviour `task-open` sets `in-progress`, adds the session to `orbh-sessions`, and pins the task. Then these edits of Stage 1 are done.
 - The mode comes from the Orbh session. A headless or subagent session runs in the headless mode and follows the `> [!headless]` callouts. In the headless mode, the invocation skips the step `close` at the open, because only a person confirms a task. `flint shard step` shows the step that the mode skipped.
+- **Readiness.** `invoke` checks the task before any write. The task must exist, be a Task, and not be `done`, `deprecated`, or `superseded`. Else `invoke` refuses with `input-not-ready`: the reason, and the ways to make the task ready. For a `done` task, the way is a new task that continues it ([[dev-sk-proj-supersede_task]]).
+- **When `invoke` refuses.** Do not edit the task by hand to pass the check. In an interactive session, tell the person the state of the task, the state that the workflow needs, and each way. Ask, then run the way that the person picks. `--not-ready '<why>'` opens the invocation anyway: pass it only when the person asks for it. A headless session does not choose: it returns the refusal as its blocker.
+- **State entry.** At the open, `invoke` settles each leading step that the state of the task proves done. On a task in `review`, `reviewing`, `reviewed`, or `done`, the steps `work` and `report` are done, and the invocation starts at `review`. The output of `invoke` names each step that the state settled.
+- **Continuation.** A later `do_task` on the same task links to the earlier invocation on that task. When the earlier invocation is a `do_task` that did not close `done` (for example, its session closed), the new invocation copies its settled steps and its outputs, and it continues from there. `--fresh` copies nothing. When the earlier invocation is still open in a live session, `invoke` refuses (`continue-open`): close that invocation, or use `--fresh`.
+- **The next workflow.** In a headless session, the `done` close of the invocation prints the next command: `proj review_task` on the task, so that a reviewer takes it. An interactive session keeps the confirm of the person (Stage 4), and its close prints no next workflow.
 - At Stage 4: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 4: `done`, `completed`, the Task Log line, and the increment log line.
 - Pass `--with task-confirm` only when the person asks for it in the current message.
 - To stop the work for now, close or return with `--with task-defer="<reason>"`. The script `task-defer` sets `deferred` and logs the reason.
@@ -35,6 +40,8 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 - When no invocation is open, do the edits of each stage by hand.
 
 > [!headless]
+> - When `invoke` refuses with `input-not-ready`, do not choose a way, and do not edit the task. Return the refusal as the blocker: `flint orbh session return --finish "<the refusal and its ways>"`.
+> - At the end of Stage 3, close the invocation with `--outcome done` before the return. The close prints the `review_task` command: put it in the result. A person who wants to confirm the task with no review runs `flint shard proj task-close "(Task) NNN Title"`.
 > - To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
 > - When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
 
@@ -108,7 +115,9 @@ If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [
 > Do not wait for a person, and do not do Stage 4.
 > - Make sure that each requirement and definition-of-done checkbox is ticked.
 > - Set the status to `review`, and add a last Task Log entry that sums up the work.
-> - Write the summary into the result, not to a person. Set `flint orbh session set phase complete`. Mark the step `review` done, then return: `flint orbh session return --finish "Completed task (Task) NNN. <summary of the work>. Moved to review."`
+> - Write the summary into the result, not to a person. Set `flint orbh session set phase complete`.
+> - With an open invocation, mark the step `review` done, and close the invocation: `flint shard invocations close --outcome done`. The step `close` was skipped at the open, so the close is allowed. It prints the next command, `flint shard invoke proj review_task --input task=…`.
+> - Return: `flint orbh session return --finish "Completed task (Task) NNN. <summary of the work>. Moved to review. Next: <the review_task command>."`
 > - Never pass `--with task-confirm`.
 
 ## Stage 4: Close

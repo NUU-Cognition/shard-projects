@@ -1,0 +1,68 @@
+{
+  "format": "shard-invocation/0.3",
+  "workflow": "wkfl-proj-scope_task",
+  "title": "Scope Task",
+  "outputs": {
+    "task": {
+      "kind": "artifact",
+      "type": "Task",
+      "required": true,
+      "description": "The task that the scope made, for example \"(Task) 750 Invocation Readiness\". Set it after Stage 3, with the title after the rename. Set it again after a later rename.",
+      "assumes": [
+        {
+          "state": "scoped",
+          "while": { "status": ["todo"] }
+        }
+      ]
+    }
+  },
+  "then": [
+    {
+      "shard": "proj",
+      "workflow": "do_task",
+      "inputs": { "task": "{{output.task}}" }
+    }
+  ],
+  "steps": [
+    {
+      "id": "research",
+      "title": "Research",
+      "by": "agent",
+      "evidence": "optional",
+      "stage": "Stage 1: Research",
+      "next": "Search the Mesh and the codebases that the request touches, and collect the findings. Write nothing into the Mesh yet. When the request can mean two different things, ask the person."
+    },
+    {
+      "id": "proposal",
+      "title": "Draft Proposal",
+      "by": "agent",
+      "evidence": "optional",
+      "stage": "Stage 2: Draft Proposal",
+      "next": "Write the proposal as paragraphs: the background, the proposed approach, the alternatives, the open questions, and the references."
+    },
+    {
+      "id": "create",
+      "title": "Task Creation",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 3: Task Creation",
+      "next": "Create the task in todo with the proposal at the bottom of its Notes, and rename it. Then set the output: flint shard invocations set-output {{invocation}} task='(Task) NNN Title'."
+    },
+    {
+      "id": "review",
+      "title": "Proposal Review",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 4: Proposal Review",
+      "next": "Walk the person through the proposal of {{output.task}}, and refine the task until the person confirms the direction."
+    },
+    {
+      "id": "finalise",
+      "title": "Finalise",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 5: Finalise",
+      "next": "Resolve or defer each open question of {{output.task}}, and update the increment log when from names an increment. Then close the invocation: flint shard invocations close {{invocation}} --outcome done."
+    }
+  ]
+}

@@ -12,6 +12,18 @@ Research a problem space, then spec a task with a written proposal. This is a **
 
 Use this when the request is fuzzy, the approach is non-obvious, or the user wants a reasoned proposal before committing to scope.
 
+# Invocation
+
+You can run this workflow as a shard invocation. The invocation is a durable record of the scope: its steps and the task that it made. The stages below do not change.
+
+- Start the workflow with `flint shard invoke proj scope_task`. The task does not exist yet: it is the output of the workflow.
+- Mark each step when it is done: `flint shard step done <step> --evidence "<…>"`. The steps are `research`, `proposal`, `create`, `review`, and `finalise`. `flint shard step` shows the current step. Outside an Orbh session (no `ORBH_SESSION_ID`), give `--invocation <id>` to `flint shard step`. The hint after each write prints the id.
+- After Stage 3, set the output: `flint shard invocations set-output <id> task="(Task) NNN Title"`. Use the title after the rename. When Stage 4 renames the task again, set the output again: a second set replaces the value.
+- After Stage 5, close the invocation: `flint shard invocations close <id> --outcome done`. The `done` close records that the task is assumed `scoped`: the record says that this scope researched and specified the task. The state holds while the task is `todo`. Then the close prints the next command: `flint shard invoke proj do_task --input task='(Task) NNN Title'`. Give it to the person.
+- A session close or a return closes the invocation with another outcome, and records no assumed state. So close the invocation with `--outcome done` when the scope is finished.
+- `flint shard assumed "(Task) NNN Title"` lists the assumed states of the task, and `flint shard ready "(Task) NNN Title"` lists the workflows that can take it next.
+- When no invocation is open, follow the stages with no record.
+
 # Input
 
 - A problem, opportunity, or fuzzy request to scope
@@ -75,6 +87,7 @@ Once created, present the task — and especially the proposal — to the user a
 - Resolve or explicitly defer every Open Question in the proposal — no open questions should be left dangling at handoff time
 - If the task has a `from` that points to an increment, update that increment's log with an entry for the new task and a one-line summary of the proposal
 - Confirm the spec is ready to be picked up by [[dev-wkfl-proj-do_task]] or [[dev-wkfl-proj-create_and_do_task]] (the latter doesn't apply here — the task already exists)
+- With an open invocation, close it with `--outcome done`. The close prints the `do_task` command for the task.
 
 # Output
 

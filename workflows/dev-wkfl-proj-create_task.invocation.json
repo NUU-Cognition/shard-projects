@@ -1,0 +1,61 @@
+{
+  "format": "shard-invocation/0.3",
+  "workflow": "wkfl-proj-create_task",
+  "title": "Create Task",
+  "outputs": {
+    "task": {
+      "kind": "artifact",
+      "type": "Task",
+      "required": true,
+      "description": "The task that this workflow made or filled in, for example \"(Task) 750 Invocation Readiness\". Set it after Stage 1, with the title after the rename. Set it again after a later rename.",
+      "assumes": [
+        {
+          "state": "specified",
+          "while": { "status": ["todo"] }
+        }
+      ]
+    }
+  },
+  "then": [
+    {
+      "shard": "proj",
+      "workflow": "do_task",
+      "inputs": { "task": "{{output.task}}" }
+    }
+  ],
+  "steps": [
+    {
+      "id": "create",
+      "title": "Task Creation",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 1: Task Creation",
+      "next": {
+        "interactive": "Create the task in todo, rename it, and give it to the person. Then set the output: flint shard invocations set-output {{invocation}} task='(Task) NNN Title'.",
+        "headless": "Rewrite the stub task of the Plate in place into a complete spec, or create the task when there is no stub. Keep it in todo, and rename it. Then set the output: flint shard invocations set-output {{invocation}} task='(Task) NNN Title'."
+      }
+    },
+    {
+      "id": "review",
+      "title": "Task Review",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 2: Task Review",
+      "next": {
+        "interactive": "Refine the spec of {{output.task}} with the person until the person confirms it.",
+        "headless": "Check the spec of {{output.task}} yourself: it must read as a complete, actionable task. When the scope is not clear, use a deferred request."
+      }
+    },
+    {
+      "id": "finalise",
+      "title": "Finalise",
+      "by": "agent",
+      "evidence": "required",
+      "stage": "Stage 3: Finalise",
+      "next": {
+        "interactive": "Set the priority and the due date when the person gave them, and update the increment log when from names an increment. Then close the invocation: flint shard invocations close {{invocation}} --outcome done.",
+        "headless": "Write the Task Log entry of the spec, and close the invocation: flint shard invocations close {{invocation}} --outcome done. Put the do_task command of the close in the result, and return with flint orbh session return --finish."
+      }
+    }
+  ]
+}

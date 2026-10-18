@@ -12,6 +12,22 @@ Spec a new task for later execution. This is a **planning** workflow — it crea
 > - Report progress with the session key `phase`: `flint orbh session set phase <phase>`. The phase values are in the section `# Headless` of [[dev-init-proj]].
 > - End the turn with `flint orbh session return --finish "<result>"`.
 
+# Invocation
+
+You can run this workflow as a shard invocation. The invocation is a durable record of the spec: its steps and the task that it made. The stages below do not change.
+
+- Start the workflow with `flint shard invoke proj create_task`. The task is the output of the workflow, also when it is a stub that exists already.
+- The mode comes from the Orbh session. A headless or subagent session runs in the headless mode and follows the `> [!headless]` callouts. Each step has a hint for each mode. `flint shard step` shows the current step and each step that the mode skipped.
+- Mark each step when it is done: `flint shard step done <step> --evidence "<…>"`. The steps are `create`, `review`, and `finalise`. Outside an Orbh session (no `ORBH_SESSION_ID`), give `--invocation <id>` to `flint shard step`. The hint after each write prints the id.
+- After Stage 1, set the output: `flint shard invocations set-output <id> task="(Task) NNN Title"`. Use the title after the rename. After a later rename, set the output again: a second set replaces the value.
+- After Stage 3, close the invocation: `flint shard invocations close <id> --outcome done`. The `done` close records that the task is assumed `specified`. The state holds while the task is `todo`. Then the close prints the next command: `flint shard invoke proj do_task --input task='(Task) NNN Title'`.
+- A session close or a return closes the invocation with another outcome, and records no assumed state. So close the invocation with `--outcome done` when the spec is finished.
+- When no invocation is open, follow the stages with no record.
+
+> [!headless]
+> - With a stub from the Plate, set the output to the stub after its rename.
+> - Close the invocation with `--outcome done` before the return, and put the `do_task` command of the close in the result.
+
 # Input
 
 - Context of a task
@@ -62,10 +78,12 @@ Spec a new task for later execution. This is a **planning** workflow — it crea
 - Set priority and due date if discussed during review
 - If the task has a `from` that points to an increment, update that increment's log with an entry for the new task
 - Confirm the spec is ready to work on
+- With an open invocation, close it with `--outcome done`. The close prints the `do_task` command for the task.
 
 > [!headless]
 > - Add a Task Log entry that records the creation of the spec.
-> - Set `flint orbh session set phase complete`, and return: `flint orbh session return --finish "Specced task (Task) NNN <title>. Ready for review or execution."`
+> - With an open invocation, close it with `--outcome done` first: `flint shard invocations close --outcome done`.
+> - Set `flint orbh session set phase complete`, and return: `flint orbh session return --finish "Specced task (Task) NNN <title>. Ready for review or execution. Next: <the do_task command>."`
 
 # Output
 

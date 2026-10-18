@@ -7,7 +7,20 @@
       "kind": "artifact",
       "type": "Task",
       "required": false,
-      "description": "The title of the task. The task does not exist at invoke time: set it after Stage 1 with flint shard invocations set-input task=\"(Task) NNN Title\"."
+      "description": "The title of the task. The task does not exist at invoke time: set it after Stage 1 with flint shard invocations set-input task=\"(Task) NNN Title\".",
+      "ready": {
+        "status": { "not": ["done", "deprecated", "superseded"] }
+      },
+      "make-ready": [
+        {
+          "from": { "status": ["done"] },
+          "say": "{{task}} is done. For more work, make a new task that continues it with sk-proj-supersede_task."
+        },
+        {
+          "from": { "status": ["deprecated", "superseded"] },
+          "say": "{{task}} is closed. Work on the task in its superseded-by field, or make a new task."
+        }
+      ]
     }
   },
   "outputs": {
@@ -18,6 +31,14 @@
       "description": "The report that the task made, for example \"(Report) 031 Title\". Set it in the report step."
     }
   },
+  "then": [
+    {
+      "shard": "proj",
+      "workflow": "review_task",
+      "inputs": { "task": "{{task}}" },
+      "when": { "session.mode": ["headless"] }
+    }
+  ],
   "steps": [
     {
       "id": "create",
@@ -25,6 +46,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 1: Task Creation",
+      "done-when": { "task.status": "set" },
       "next": {
         "interactive": "Create the task. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'.",
         "headless": "Create the task, set the phase creating-task, and track the task with flint orbh artifact. Then set the input: flint shard invocations set-input {{invocation}} task='(Task) NNN Title'."
@@ -36,6 +58,7 @@
       "by": "agent",
       "evidence": "required",
       "stage": "Stage 2: Task Work",
+      "done-when": { "task.status": ["review", "reviewing", "reviewed", "done"] },
       "next": {
         "interactive": "Implement {{task}}: tick each checkbox, write the Task Log, and commit the WIP of each repo in git-repos.",
         "headless": "Implement {{task}}: tick each checkbox, write the Task Log, commit the WIP of each repo in git-repos, and keep the phase and the progress of the session current. When blocked, use a deferred request."
@@ -47,6 +70,7 @@
       "by": "agent",
       "evidence": "optional",
       "stage": "Stage 3: Report",
+      "done-when": { "task.status": ["review", "reviewing", "reviewed", "done"] },
       "next": "Make a report when {{task}} asks for one, or when the work found something to keep. Then set the output: flint shard invocations set-output {{invocation}} report='(Report) NNN Title'. Else skip this step: flint shard step skip report --invocation {{invocation}} --reason '<why>'.",
       "calls": [
         {
@@ -66,7 +90,7 @@
       "stage": "Stage 4: Task Review",
       "next": {
         "interactive": "Set {{task}} to review, give the person a summary, and refine it until the person confirms.",
-        "headless": "Check each checkbox of {{task}}, set it to review, and write the last Task Log line. Mark this step done, then return the summary with flint orbh session return --finish. Never pass --with task-confirm."
+        "headless": "Check each checkbox of {{task}}, set it to review, and write the last Task Log line. Mark this step done, and close the invocation: flint shard invocations close {{invocation}} --outcome done. Put the review_task command of the close in the result, and return with flint orbh session return --finish. Never pass --with task-confirm."
       }
     },
     {

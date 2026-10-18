@@ -163,7 +163,32 @@ When working on tasks, agents must tick off checkbox items (`- [ ]` → `- [x]`)
 
 ## Invocations
 
-The workflows Do Task and Create and Do Task have an invocation file (`wkfl-proj-<name>.invocation.json`). Start them with `flint shard invoke proj do_task --input task="(Task) NNN Title"` or `flint shard invoke proj create_and_do_task`. The invocation file declares these behaviours:
+Each workflow of Projects has an invocation file (`wkfl-proj-<name>.invocation.json`, format `shard-invocation/0.3`). The files make one chain over time: a task that Scope Task or Create Task makes is ready for Do Task, and a task that Do Task leaves in `review` is ready for Review Task.
+
+| Workflow | Start | The task | Ready (`invoke` checks the task) | Assumed state at a `done` close | Next workflow (`then`) |
+|---|---|---|---|---|---|
+| Scope Task | `flint shard invoke proj scope_task` | Output `task` | — | `scoped`, while `status` is `todo` | `proj do_task` |
+| Create Task | `flint shard invoke proj create_task` | Output `task` | — | `specified`, while `status` is `todo` | `proj do_task` |
+| Do Task | `flint shard invoke proj do_task --input task="(Task) NNN Title"` | Input `task` | `status` is not `done`, `deprecated`, or `superseded` | — | `proj review_task`, in a headless session only |
+| Create and Do Task | `flint shard invoke proj create_and_do_task` | Input `task`, set after Stage 1 | The same as Do Task (checked at `set-input`) | — | `proj review_task`, in a headless session only |
+| Review Task | `flint shard invoke proj review_task --input task="(Task) NNN Title"` | Input `task` | `status` is `review` | — | — |
+
+The files add these behaviours of the sequence:
+
+| Behaviour | What happens |
+|---|---|
+| Readiness | `invoke` (and `set-input`) checks the task before any write: the file exists, it is a Task, and it meets the ready condition. Else the refusal `input-not-ready` gives the reason and the ways to make the task ready (`make-ready`). |
+| The ways | Review Task on a task in `todo`, `in-progress`, `blocked`, or `deferred` gives `flint shard invoke proj do_task --input task=… --toward 'proj review_task'`. Review Task on a task in `reviewing` says that another review runs. Do Task on a `done` task says: make a new task that continues it with `sk-proj-supersede_task`. |
+| Assumed states | The `done` close of Scope Task records that the task is assumed `scoped`, and the `done` close of Create Task records `specified`. A state holds while the task is `todo`, until a later record replaces it or a person withdraws it. `flint shard assumed "(Task) NNN Title"` lists the states, with their source. Do Task does not need a state, but its verdict names a state that holds. |
+| The next workflow | The `done` close of Scope Task and of Create Task prints the Do Task command. The `done` close of Do Task and of Create and Do Task in a headless session prints the Review Task command. An interactive session keeps the confirm of the person (`--with task-confirm`). `flint shard ready "(Task) NNN Title"` lists each workflow that can take the task, with its verdict. |
+| State entry | At the open, `invoke` settles each leading step that the state of the task proves done. Do Task on a task in `review`, `reviewing`, `reviewed`, or `done` starts at the step `review`: the steps `work` and `report` are done. |
+| Continuation | A later Do Task on the same task links to the earlier invocation on that task (`continues`). When the earlier invocation is a Do Task that did not close `done`, the new one copies its settled steps and its outputs, and continues from there. `--fresh` copies nothing. When the earlier invocation is still open in a live session, `invoke` refuses (`continue-open`): close it, or use `--fresh`. |
+| Modes | A step with `"modes": ["interactive"]` (the step `close` of Do Task and of Create and Do Task) is skipped at the open of a headless invocation. A step with a `next` object has one hint for each mode. |
+
+- **When `invoke` refuses with `input-not-ready`:** do not edit the task by hand to pass the check. In an interactive session, tell the person the state of the task, the state that the workflow needs, and each way. Ask, then run the way that the person picks. `--not-ready '<why>'` opens the invocation anyway: pass it only when the person asks for it in the current message. A headless session does not choose: it returns the refusal as its blocker.
+- **Close with `--outcome done`** when a workflow is finished. Only a `done` close records an assumed state and prints the next workflow. A session close or a return closes the open invocations with another outcome. A headless Do Task closes its invocation `done` before the return, and puts the Review Task command in the result.
+
+Do Task and Create and Do Task declare these behaviours:
 
 | Behaviour | Place | Runs | When `task.status` is | Action |
 |---|---|---|---|---|
@@ -178,7 +203,7 @@ The workflows Do Task and Create and Do Task have an invocation file (`wkfl-proj
 - `--no-behaviours` on the verb runs no behaviour. The invocation record keeps this choice.
 - The scripts also run by hand: `flint shard proj task-close "(Task) NNN Title"`, and `flint shard proj task-defer "(Task) NNN Title" "<reason>"`.
 - With no invocation, the workflows work as before: the agent does the edits by hand.
-- The invocation files have the format `shard-invocation/0.3`. The record owns the steps: mark each one with `flint shard step done <step> --evidence "<…>"` or `flint shard step skip <step> --reason "<why>"`, in order. After each write, the CLI prints `now:`, `next:`, and `part of:`. Each step names its stage in the workflow, so the agent reads only that stage again after a compaction.
+- The record owns the steps: mark each one with `flint shard step done <step> --evidence "<…>"` or `flint shard step skip <step> --reason "<why>"`, in order. After each write, the CLI prints `now:`, `next:`, and `part of:`. Each step names its stage in the workflow, so the agent reads only that stage again after a compaction.
 - The `report` step (after the work) calls the Reports shard: `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. In a headless session, the report runs in the headless mode too, with the same command: its review is a self-check, with no person gate. The task has the output `report` (optional): `flint shard invocations set-output <id> report="(Report) NNN Title"`. A task with no report skips the step with a reason.
 - Inside a notepad (`flint shard invoke ntpd start`), a task opens as a child of the notepad, and the session continues after the task. Then the close of the task is `flint shard proj task-close "(Task) NNN Title"` (after the person confirms) and `flint shard invocations close <id> --outcome done`, not a session close.
 - One workflow file serves both modes. The mode comes from the Orbh session: a headless or subagent session runs in the headless mode, and an interactive session (or no session) runs in the interactive mode. A headless session follows the `> [!headless]` callouts of the workflow, and the invocation skips each step that is only for a person at the open (the step `close`, with `"modes": ["interactive"]`). `flint shard step` shows the step that the mode skipped. In the headless mode, the agent never passes `--with task-confirm`. It may pass `--with task-defer="<reason>"` on `flint orbh session return`.

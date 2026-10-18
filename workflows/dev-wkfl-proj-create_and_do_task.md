@@ -26,6 +26,9 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 - Start the workflow with `flint shard invoke proj create_and_do_task`. The task does not exist yet, so give no task input.
 - The mode comes from the Orbh session. A headless or subagent session runs in the headless mode and follows the `> [!headless]` callouts. In the headless mode, the invocation skips the step `close` at the open, because only a person confirms a task. `flint shard step` shows the step that the mode skipped.
 - After Stage 1, set the task input: `flint shard invocations set-input <id> task="(Task) NNN Title"`. The hint after each write prints the command with the id of the invocation. Use the title after the rename. The close behaviours find the task through this input.
+- **Readiness.** `set-input` checks the task before it writes: the task must exist, be a Task, and not be `done`, `deprecated`, or `superseded`. Else it refuses with `input-not-ready` and the ways. A new task in `in-progress` passes. Do not edit the task by hand to pass the check: tell the person, ask, then run the way that the person picks.
+- **State entry.** When the open already has a task input (a task that exists), `invoke` settles each leading step that the state of the task proves done: `create` when the task exists, and `work` and `report` when it is in `review`, `reviewing`, `reviewed`, or `done`.
+- **The next workflow.** In a headless session, the `done` close of the invocation prints the next command: `proj review_task` on the task. An interactive session keeps the confirm of the person (Stage 5).
 - At Stage 5: when the invocation is open and the person confirms, the close is `flint orbh close --with task-confirm`. In a session that stays open, use `flint orbh session return --finish --with task-confirm`. The script `task-close` does the edits of Stage 5: `done`, `completed`, the Task Log line, and the increment log line.
 - Pass `--with task-confirm` only when the person asks for it in the current message.
 - To stop the work for now, close or return with `--with task-defer="<reason>"`. The script `task-defer` sets `deferred` and logs the reason.
@@ -36,7 +39,8 @@ You can run this workflow as a shard invocation. The invocation is a durable rec
 - When no invocation is open, do the edits of each stage by hand.
 
 > [!headless]
-> - After Stage 1, set the task input as above. The return behaviours find the task through this input.
+> - After Stage 1, set the task input as above. The return behaviours find the task through this input. When `set-input` refuses with `input-not-ready`, return the refusal as the blocker.
+> - At the end of Stage 4, close the invocation with `--outcome done` before the return. The close prints the `review_task` command: put it in the result. A person who wants to confirm the task with no review runs `flint shard proj task-close "(Task) NNN Title"`.
 > - To stop the work for now, return with `flint orbh session return --with task-defer="<reason>" "<result>"`. The script `task-defer` sets `deferred` and logs the reason.
 > - When a task script refuses, the return stops and prints the reason. Return again without `--with task-defer`, and put the reason in the result.
 
@@ -127,7 +131,9 @@ If the task has a `git-repos` field and `flint shard list` shows `ite`, follow [
 > Do not wait for a person, and do not do Stage 5. `--skip-review` does not apply.
 > - Make sure that each requirement and definition-of-done checkbox is ticked.
 > - Set the status to `review`, and add a last Task Log entry that sums up the work.
-> - Write the summary into the result, not to a person. Set `flint orbh session set phase complete`. Mark the step `review` done, then return: `flint orbh session return --finish "Created and completed task (Task) NNN <title>. <summary of the work>. Moved to review."`
+> - Write the summary into the result, not to a person. Set `flint orbh session set phase complete`.
+> - With an open invocation, mark the step `review` done, and close the invocation: `flint shard invocations close --outcome done`. The step `close` was skipped at the open, so the close is allowed. It prints the next command, `flint shard invoke proj review_task --input task=…`.
+> - Return: `flint orbh session return --finish "Created and completed task (Task) NNN <title>. <summary of the work>. Moved to review. Next: <the review_task command>."`
 > - Never pass `--with task-confirm`.
 
 ## Stage 5: Close

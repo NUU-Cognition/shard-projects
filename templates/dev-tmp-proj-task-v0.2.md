@@ -17,8 +17,8 @@ from: [[optional parent — increment or mission wikilink, or leave blank]]
 due: [ISO 8601]
 completed: [ISO 8601]
 priority: [empty|low|medium|high]
-orbh-sessions:
-  - "[[agent-session-uuid]]"
+orb: /* the v1 address of each agent session that edits this task: append the by address of flint address me. An old task keeps its orbh-sessions field: never remove it. */
+  - "[the by address of flint address me]"
 template: "[[dev-tmp-proj-task-v0.2]]"
 authors: /* from flint whoami (the machine-global Name); omit if no Name is set */
   - "[[@Person Name]]"

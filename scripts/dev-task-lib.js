@@ -12,8 +12,10 @@
 //   before any write, with exit 1, "Nothing changed", and the line that is not in the subset.
 // - The frontmatter starts at line 1 with "---" and ends at the next line that is exactly "---". A top-level key is an
 //   unquoted name at column 0. Each search stays inside these two lines, and each edit parses the frontmatter again.
-// - The fields that a script reads or writes (status, completed, from, orbh-sessions) have the forms of decodeScalar
-//   and sessionsList. Every other line stays as it is, with its own line end.
+// - The fields that a script reads or writes (status, completed, from, orb, orbh-sessions) have the forms of
+//   decodeScalar and listField. Every other line stays as it is, with its own line end.
+// - The session stamp (NUU Orbh Mission 027): a new stamp goes into `orb:` as the v1 address of the session. The old
+//   field `orbh-sessions` is read, never changed, and never removed.
 // - A script locks each document from the read to the replace (a folder under <FLINT_ROOT>/.flint/locks/), in the
 //   order of the sorted real paths. It follows no symbolic link. It replaces a file only through a new temporary file
 //   in the same folder.
@@ -473,7 +475,7 @@ function parseDoc(doc) {
     doc.fm = parseFrontmatter(doc);
     // Each restricted field is checked before the first edit, also when the script does not read it (P-12).
     for (const key of RESTRICTED_SCALARS) scalarField(doc, key);
-    listField(doc, 'orbh-sessions');
+    for (const key of SESSION_FIELDS) listField(doc, key);
     return;
   }
   doc.fm = null;
@@ -582,6 +584,10 @@ function writeDoc(doc) {
 const TOP_KEY = /^([A-Za-z_][A-Za-z0-9_-]*):(.*)$/;
 /** The scalar fields that a script reads or writes. Their forms are checked in each task document. */
 const RESTRICTED_SCALARS = ['status', 'completed', 'from'];
+/** The session stamp fields: `orb` (v1 addresses, the field of each new stamp) and `orbh-sessions` (the old field). */
+const ORB_FIELD = 'orb';
+const LEGACY_ORB_FIELD = 'orbh-sessions';
+const SESSION_FIELDS = [ORB_FIELD, LEGACY_ORB_FIELD];
 
 function unsupported(doc, index, why) {
   const line = doc.lines[index] ? doc.lines[index].text : '';
@@ -857,10 +863,86 @@ function addListItem(doc, key, item, before = []) {
   return true;
 }
 
-/** Add the session to `orbh-sessions` (the Flint session tracking rule). */
+const UUID = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+
+/**
+ * The session id of a stamp item, in lower case: `[[<uuid>]]`, a bare UUID, or an address of a session
+ * (`@v1/<org>/session/<uuid>#flint/<slug>`, also with no place or no org). `null` for any other item.
+ */
+function sessionIdOf(item) {
+  const text = String(item).trim();
+  const match = new RegExp(`^\\[\\[(${UUID})\\]\\]$`).exec(text)
+    || new RegExp(`^(${UUID})$`).exec(text)
+    || (text.startsWith('@') ? new RegExp(`/session/(${UUID})(?=$|[@#/])`).exec(text) : null);
+  return match ? match[1].toLowerCase() : null;
+}
+
+/** The org of `[flint]` in flint.toml, or '' when the Flint has none (a local Flint). */
+function flintOrg(root) {
+  let text;
+  try {
+    text = fs.readFileSync(path.join(root, 'flint.toml'), 'utf8');
+  } catch {
+    return '';
+  }
+  let inFlint = false;
+  for (const line of text.split(/\r?\n/)) {
+    const table = /^\s*\[\[?([^\]]*)\]\]?\s*(?:#.*)?$/.exec(line);
+    if (table) {
+      inFlint = table[1].trim() === 'flint';
+      continue;
+    }
+    const org = inFlint ? /^\s*org\s*=\s*(?:"([^"]*)"|'([^']*)')\s*(?:#.*)?$/.exec(line) : null;
+    if (org) {
+      const slug = (org[1] !== undefined ? org[1] : org[2]).trim();
+      return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) ? slug : '';
+    }
+  }
+  return '';
+}
+
+/**
+ * The v1 address of the session: the `by` of `flint address me --json`. A CLI that has no `flint address me` (a
+ * release before the v1 addresses) gives the short form with no place: `@v1/<org>/session/<uuid>`, with the org of
+ * flint.toml, else the empty org (`@v1//session/<uuid>`).
+ */
+function sessionAddress(root, session) {
+  const id = session.toLowerCase();
+  // SIGKILL: a child that ignores SIGTERM must not hold the lock of the task after the timeout.
+  const result = spawnSync('flint', ['address', 'me', '--json'], {
+    cwd: root,
+    env: process.env,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 15000,
+    killSignal: 'SIGKILL',
+  });
+  if (!result.error && result.status === 0) {
+    try {
+      const { by } = JSON.parse(result.stdout);
+      if (typeof by === 'string' && by.startsWith('@v1/') && sessionIdOf(by) === id) return by;
+    } catch {
+      // Not the JSON of `flint address me`: build the short form.
+    }
+  }
+  return `@v1/${flintOrg(root)}/session/${id}`;
+}
+
+/**
+ * Stamp the session in `orb:` (the Flint session tracking rule): append its v1 address. The session is stamped
+ * already when `orb:` or `orbh-sessions` has an item with its id (any org, any place). `orbh-sessions` never changes.
+ */
 function trackSession(doc, session) {
   if (!session) return false;
-  return addListItem(doc, 'orbh-sessions', `[[${session}]]`, ['template', 'authors']);
+  const id = sessionIdOf(session);
+  if (!id) {
+    process.stderr.write(`warning: ORBH_SESSION_ID ${JSON.stringify(session)} is not a session UUID: no orb stamp\n`);
+    return false;
+  }
+  for (const key of SESSION_FIELDS) {
+    if (listField(doc, key).items.some((existing) => sessionIdOf(existing.value) === id)) return false;
+  }
+  return addListItem(doc, ORB_FIELD, sessionAddress(doc.root, session), ['template', 'authors']);
 }
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,8 @@
 orbh-sessions:
   - "[[87347e6b-2363-4434-9a98-f1d641049fa7]]"
   - "[[f562483c-6afe-404a-98eb-a049503a241e]]"
+orb:
+  - "@v1/nuucognition/session/1329c745-63ed-4a01-b598-bf588a84df0e#flint/nuu-orbh"
 ---
 
 > [!important] THIS FILE IS AN INSTRUCTION. WHEN REFERENCED IT IS MEANT TO BE TAKEN AS AN ACTION.
@@ -23,7 +25,7 @@ Execute an existing task through to completion. This is an **execution** workflo
 
 You can run this workflow as a shard invocation. The invocation is a durable record of the run. Its behaviours do some edits of the task for you. The stages below do not change.
 
-- Start the workflow with `flint shard invoke proj do_task --input task="(Task) NNN Title"`. When the task is `todo`, the behaviour `task-open` sets `in-progress`, adds the session to `orbh-sessions`, and pins the task. Then these edits of Stage 1 are done.
+- Start the workflow with `flint shard invoke proj do_task --input task="(Task) NNN Title"`. When the task is `todo`, the behaviour `task-open` sets `in-progress`, stamps the session in `orb:` (its v1 address), and pins the task. Then these edits of Stage 1 are done.
 - The mode comes from the Orbh session. A headless or subagent session runs in the headless mode and follows the `> [!headless]` callouts. In the headless mode, the invocation skips the step `close` at the open, because only a person confirms a task. `flint shard step` shows the step that the mode skipped.
 - **Readiness.** `invoke` checks the task before any write. The task must exist, be a Task, and not be `done`, `deprecated`, `superseded`, or `reviewing`. Else `invoke` refuses with `input-not-ready`: the reason, and the ways to make the task ready. For a `done` task, the way is a new task that continues it ([[dev-sk-proj-supersede_task]]). For a `reviewing` task, a review runs now: wait for it to end, or ask the person.
 - **When `invoke` refuses.** Do not edit the task by hand to pass the check. In an interactive session, tell the person the state of the task, the state that the workflow needs, and each way. Ask, then run the way that the person picks. `--not-ready '<why>'` opens the invocation anyway: pass it only when the person asks for it. A headless session does not choose: it returns the refusal as its blocker.

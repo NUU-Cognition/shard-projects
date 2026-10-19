@@ -192,7 +192,7 @@ Do Task and Create and Do Task declare these behaviours:
 
 | Behaviour | Place | Runs | When `task.status` is | Action |
 |---|---|---|---|---|
-| `task-open` | `invocation.open` | Each time | `todo` | Script `task-open`: sets `in-progress`, adds the session to `orbh-sessions`, and pins the task |
+| `task-open` | `invocation.open` | Each time | `todo` | Script `task-open`: sets `in-progress`, stamps the session in `orb:` (its v1 address), and pins the task |
 | `task-hint` | `session.close`, before | Each time | `review` | Says that `--with task-confirm` moves the task to done |
 | `task-return-check` | `session.return --finish`, before | Each time | `todo`, `in-progress` | Says that the task is still open, and names `--with task-defer` |
 | `task-confirm` | `session.close`, `session.return`, before | Only with `--with task-confirm` (a person) | `review`, `reviewed`, `done` | Script `task-close`: sets `done` and `completed`, and writes the Task Log line and the increment log line. On a `done` task, it only adds a missing increment row |
@@ -207,7 +207,8 @@ Do Task and Create and Do Task declare these behaviours:
 - The `report` step (after the work) calls the Reports shard: `flint shard invoke rpt create --input source="(Task) NNN Title"` opens the report as a child of the task. In a headless session, the report runs in the headless mode too, with the same command: its review is a self-check, with no person gate. The task has the output `report` (optional): `flint shard invocations set-output <id> report="(Report) NNN Title"`. A task with no report skips the step with a reason.
 - Inside a notepad (`flint shard invoke ntpd start`), a task opens as a child of the notepad, and the session continues after the task. Then the close of the task is `flint shard proj task-close "(Task) NNN Title"` (after the person confirms) and `flint shard invocations close <id> --outcome done`, not a session close.
 - One workflow file serves both modes. The mode comes from the Orbh session: a headless or subagent session runs in the headless mode, and an interactive session (or no session) runs in the interactive mode. A headless session follows the `> [!headless]` callouts of the workflow, and the invocation skips each step that is only for a person at the open (the step `close`, with `"modes": ["interactive"]`). `flint shard step` shows the step that the mode skipped. In the headless mode, the agent never passes `--with task-confirm`. It may pass `--with task-defer="<reason>"` on `flint orbh session return`.
-- The scripts edit only a strict subset of the YAML frontmatter (unquoted keys at column 0; one-line values for `status`, `completed`, and `from`; a block list, an empty value, or a one-line flow list for `orbh-sessions`). They refuse every other form before any write, with the line that is not supported. Then edit the file by hand.
+- The scripts edit only a strict subset of the YAML frontmatter (unquoted keys at column 0; one-line values for `status`, `completed`, and `from`; a block list, an empty value, or a one-line flow list for `orb` and `orbh-sessions`). They refuse every other form before any write, with the line that is not supported. Then edit the file by hand.
+- The scripts stamp the session as `flint address me` gives it (the `by` address). With a CLI that has no `flint address me`, they write the short form `@v1/<org>/session/<uuid>` (the org of `flint.toml`, else empty). They never change or remove `orbh-sessions`, and they add nothing when either field already has the session.
 
 # Headless
 

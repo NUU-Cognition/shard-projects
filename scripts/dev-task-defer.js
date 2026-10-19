@@ -4,8 +4,8 @@
 // or blocked.
 // Invocation: flint shard proj task-defer ["(Task) NNN Title"] ["<reason>"]. The task input of the invocation and
 // FLINT_BEHAVIOUR_VALUE come first; the arguments are for a run by hand.
-// It moves the task from in-progress or blocked to deferred, adds ORBH_SESSION_ID to orbh-sessions, and appends one
-// line with the reason to the Task Log. It refuses an empty reason with exit 1.
+// It moves the task from in-progress or blocked to deferred, stamps ORBH_SESSION_ID in orb: (its v1 address), and
+// appends one line with the reason to the Task Log. It refuses an empty reason with exit 1.
 // A task that is already deferred changes nothing. It refuses any other status, and every frontmatter form that is
 // not in the subset of task-lib, with exit 1 before any write.
 // Output: one result line.

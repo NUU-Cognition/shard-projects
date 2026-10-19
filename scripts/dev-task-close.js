@@ -4,10 +4,10 @@
 // reviewed.
 // Invocation: flint shard proj task-close ["(Task) NNN Title"]. The task input of the invocation comes first; the
 // argument is for a run by hand.
-// It moves the task from review or reviewed to done, sets completed (today, the local date), adds ORBH_SESSION_ID to
-// orbh-sessions, and appends one line to the Task Log. When from names an increment, it appends the completion row to
-// the Log section of that increment. When it cannot find one increment file or its Log section, the result line says
-// that the increment log needs a line.
+// It moves the task from review or reviewed to done, sets completed (today, the local date), stamps ORBH_SESSION_ID in
+// orb: (its v1 address), and appends one line to the Task Log. When from names an increment, it appends the completion
+// row to the Log section of that increment. When it cannot find one increment file or its Log section, the result line
+// says that the increment log needs a line.
 // Both edits are made and checked in memory before the first write, under the locks of both files (taken in the
 // order of the sorted real paths). A refusal writes nothing.
 // A task that is already done keeps its fields. The script still adds the completion row when it is missing (a retry

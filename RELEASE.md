@@ -1,5 +1,11 @@
 # Projects Releases
 
+## Release 1.7.1
+
+- The task scripts (`task-open`, `task-defer`, `task-close` through `task-lib.js`) stamp a task with the field `orb:` and the v1 address of the session: the `by` of `flint address me`, else the short form `@v1/<org>/session/<uuid>` with the org of `flint.toml`. Old tasks keep `orbh-sessions` (NUU Orbh Mission 027).
+- An item counts as the stamp of the session only by an exact form: the address of `flint address me`, the short form, `[[<uuid>]]`, or the bare UUID. The script parses no address (revision R27 of Mission 027).
+- The task template (`tmp-proj-task-v0.2`) writes `orb:`, and `init-proj` and `wkfl-proj-do_task` describe the stamp rule.
+
 ## Release 1.7.0
 
 - One workflow for each mode (NUU Orbh Task 748). The headless workflows (`hwkfl-proj-*`) and the headless init (`hinit-proj`) are merged into the normal files. A stage that differs in a headless session has a `> [!headless]` callout. The init has a `# Headless` section. `flint shard start proj` loads the shard in each mode, and the mode comes from the Orbh session.

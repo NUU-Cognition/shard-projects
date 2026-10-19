@@ -863,18 +863,58 @@ function addListItem(doc, key, item, before = []) {
   return true;
 }
 
-const UUID = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+/** A session id: 8-4-4-4-12 hex, any version digit (as `ORB_ID` of places). */
+const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** A wikilink to one note, with an optional heading or alias (as `WIKILINK` of places). */
+const WIKILINK = /^\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]$/;
+/** An org slug, an alias, and the type words of a v1 address (`packages/entity`, `v1/parse.ts` and `v1/key.ts`). */
+const V1_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const V1_TYPE = /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*)?$/;
+/** The base types of `V1_TYPES` (`packages/entity`, `v1/types.ts`). A place of another type is no address. */
+const V1_BASE_TYPES = new Set([
+  'org', 'app', 'registry', 'computer', 'flint', 'tinderbox', 'station', 'agent', 'wisp', 'session', 'shard', 'module',
+  'mesh', 'project', 'deliverable', 'task', 'taskgroup', 'notepad', 'collection', 'source', 'note', 'citation', 'garden',
+  'opinion', 'event', 'topic', 'orb', 'thread', 'stash', 'item', 'study', 'finding', 'case', 'theory', 'spark', 'idea',
+  'proposal', 'post', 'list', 'comment', 'effect', 'profile', 'platform', 'report', 'space', 'belief',
+]);
+
+/** True for an org slug of a v1 address: 1 to 64 characters, and not a scheme word such as `v1`. */
+function isOrgSlug(text) {
+  return text.length <= 64 && V1_SLUG.test(text) && !/^v[0-9]+$/.test(text);
+}
+
+/** True for one place of a v1 address: `<key>`, `<type>/<key>`, or `<org>/<type>/<key>` (`parsePlace` of entity). */
+function isPlace(text) {
+  const parts = text.split('/');
+  if (parts.length > 3 || parts.some((part) => part.length === 0)) return false;
+  const key = parts[parts.length - 1];
+  const type = parts.length >= 2 ? parts[parts.length - 2] : null;
+  if (parts.length === 3 && !isOrgSlug(parts[0])) return false;
+  if (type !== null && !(V1_TYPE.test(type) && V1_BASE_TYPES.has(type.split('.')[0]))) return false;
+  return key.length <= 64 && V1_SLUG.test(key);
+}
 
 /**
- * The session id of a stamp item, in lower case: `[[<uuid>]]`, a bare UUID, or an address of a session
- * (`@v1/<org>/session/<uuid>#flint/<slug>`, also with no place or no org). `null` for any other item.
+ * The session id of a stamp item, in lower case, or `null`. The item is read whole, as `refOf` of places reads it
+ * (never by a substring): a bare UUID, `[[<uuid>]]` (also with a heading or an alias), or the v1 address of a session
+ * `@v1/<org>/session/<uuid>` with zero or more places (`#flint/<slug>`). The org is empty or an org slug. An address
+ * of another kind (a wisp with the same UUID), a version, a chain, a path after the key, a capital letter, or a bad
+ * place gives `null`: that item is no stamp of the session.
  */
 function sessionIdOf(item) {
   const text = String(item).trim();
-  const match = new RegExp(`^\\[\\[(${UUID})\\]\\]$`).exec(text)
-    || new RegExp(`^(${UUID})$`).exec(text)
-    || (text.startsWith('@') ? new RegExp(`/session/(${UUID})(?=$|[@#/])`).exec(text) : null);
-  return match ? match[1].toLowerCase() : null;
+  if (SESSION_ID.test(text)) return text.toLowerCase();
+  const link = WIKILINK.exec(text);
+  if (link) return SESSION_ID.test(link[1].trim()) ? link[1].trim().toLowerCase() : null;
+  if (!text.startsWith('@v1/') || /\s/.test(text) || /[A-Z]/.test(text)) return null;
+  const [head, ...places] = text.slice(1).split('#');
+  if (places.some((place) => place.includes('@') || !isPlace(place))) return null;
+  const slots = head.split('/');
+  if (slots.length !== 4 || slots[0] !== 'v1') return null;
+  const [, org, type, key] = slots;
+  if (org !== '' && !isOrgSlug(org)) return null;
+  if (type !== 'session' || !SESSION_ID.test(key)) return null;
+  return key;
 }
 
 /** The org of `[flint]` in flint.toml, or '' when the Flint has none (a local Flint). */
